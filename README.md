@@ -12,13 +12,21 @@ progress and follow better SDLC practice.
 
 **Displaying user view as 3d boxes, with random color between 'points' to make**
 **it look like walls/floors**
+
 ![DoomClone](ColorCellLines.PNG)
+
 **Displaying user view without boxlines, giving a 'real' impression**'
+
 ![DoomClone](ColorCells.PNG)
+
 **Displaying user view with scaled (based on distance) sprites**
+
 ![DoomClone](ColorCellsEnemies.PNG)
+
 **Displaying user view with 1:1 window size scaled 'player character view'**
+
 ![DoomClone](ColorCellEnemiesGun.PNG)
+
 ## Next Build
 
 Week ending 30/05/2020
