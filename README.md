@@ -21,7 +21,7 @@ progress and follow better SDLC practice.
 
 **Displaying user view with scaled (based on distance) sprites**
 
-![DoomClone](ColorCellsEnemies.PNG)
+![DoomClone](ColorCellEnemies.PNG)
 
 **Displaying user view with 1:1 window size scaled 'player character view'**
 
