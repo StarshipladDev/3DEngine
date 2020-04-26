@@ -24,6 +24,7 @@ namespace DoomCloneV2
         public static bool drawGun = true;
         public static bool drawLines = true;
         public static bool drawFill = true;
+        public static bool drawn = true;
         public const int maxView = 20;
         public const int cellSize = 20;
         //Draw directin /Drew gun //Turn gun back
@@ -31,7 +32,7 @@ namespace DoomCloneV2
         public static int[] animations = new int[5];
         public static bool readyToDraw = true;
         public const int MAXFRAMES=8;
-        public const int INTERVALTIMEMILISECONDS = 1000;
+        public const int INTERVALTIMEMILISECONDS = 1000/2;
         public const int MaxPossibleDepth =20;
 
         /// <summary>
@@ -66,6 +67,22 @@ namespace DoomCloneV2
 
             return destImage;
         }
+        
+        /// <summary>
+        /// Crops a sub-rectangle of a given image
+        /// </summary>
+        /// <param name="source">The imagee file to draw a sub-image from</param>
+        /// <param name="section">The specified size and position of the rectangle subimage</param>
+        /// <returns></returns>
+        public static Bitmap CropImage(Bitmap source, Rectangle section)
+        {
+            var bitmap = new Bitmap(section.Width, section.Height);
+            using (var g = Graphics.FromImage(bitmap))
+            {
+                g.DrawImage(source, 0, 0, section, GraphicsUnit.Pixel);
+                return bitmap;
+            }
+        }
     }
     /// <summary>
     /// Form1 is the Primary form component that runs when openeing the .exe
@@ -83,13 +100,17 @@ namespace DoomCloneV2
         /// </summary>
         public Form1()
         {
-            for(int i=0; i < Globals.animations.Length; i++)
+
+            //this.SetStyle(ControlStyles.OptimizedDoubleBuffer,true);
+            //this.SetStyle(ControlStyles.AllPaintingInWmPaint, true);
+            //this.SetStyle(ControlStyles.UserPaint, true);
+            for (int i=0; i < Globals.animations.Length; i++)
             {
                 Globals.animations[i] = 0;
             }
             thisPlayer.playerView = Globals.ResizeImage(thisPlayer.playerView, this.Width, this.Height);
             Random rand = new Random();
-            Color ColorRoof = Color.FromArgb(150, rand.Next(255), rand.Next(255), rand.Next(255));
+            Color ColorRoof = Color.FromArgb(150, 255,200,0);
             //Y
             for (int i = 0; i < cellList.GetLength(0); i++)
             {
@@ -104,7 +125,7 @@ namespace DoomCloneV2
                     else
                     {
 
-                        Color ColorFloor = Color.FromArgb(150, rand.Next(255), rand.Next(155)+100-rand.Next(100), rand.Next(255));
+                        Color ColorFloor = Color.FromArgb(50, rand.Next(50), 255, rand.Next(50));
                         cellList[i, f] = new Cell(false, Color.FromArgb(0, 0, 0, 0),ColorFloor,ColorRoof);
                     }
                     
@@ -122,7 +143,7 @@ namespace DoomCloneV2
                 {
                     if (! cellList[xForBlock, yForBLock].GetisUnitPresent())
                     {
-                        units.Add(cellList[xForBlock, yForBLock].createUnit(new Bitmap("Resources/Images/DevilSuit.png"),new Bitmap("Resources/Images/DevilSuit_Dead.png")));
+                        units.Add(cellList[xForBlock, yForBLock].createUnit(new Bitmap("Resources/Images/Enemy/Devil/Devil_Idle.png"),new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
                     }
                 }
             }
@@ -165,9 +186,10 @@ namespace DoomCloneV2
         {
             if (Globals.readyToDraw)
             {
+
                 Globals.readyToDraw = false;
-                this.FormUpdate(true);
                 base.OnPaint(e);
+                this.FormUpdate(true);
                 Globals.readyToDraw = true;
             }
         }
@@ -178,9 +200,10 @@ namespace DoomCloneV2
         /// <param name="unitsa">Whether to draw non-cell specfic items (Such as units or player views)</param>
         private void FormUpdate(bool unitsa = false)
         {
-            this.Update();
-            //Graphics g = Graphics.FromImage(new Bitmap(this.Width,this.Height));
-            Graphics g = this.CreateGraphics();
+            //this.Update();
+            Bitmap n = new Bitmap(this.Width, this.Height);
+            Graphics g = Graphics.FromImage(n);
+            //Graphics g = this.CreateGraphics();
             for (int i = 0; i < units.Count; i++)
             {
                 units[i].bottomRight = new Point(-1, -1);
@@ -331,6 +354,12 @@ namespace DoomCloneV2
                     g.DrawImage(thisPlayer.playerView, new Point(this.Width - thisPlayer.playerView.Width - 10, this.Height - thisPlayer.playerView.Height - 40));
                 }
                 g.Dispose();
+                Graphics z = this.CreateGraphics();
+                z.DrawImage(n, 0, 0, n.Width, n.Height);
+                z.Dispose();
+
+                //n.Save("Image"+Globals.animations[1]+".png");
+                //Globals.animations[1]++;
 
             }
            
@@ -599,9 +628,7 @@ namespace DoomCloneV2
         /// <param name="unitClicked"></param>
         private void ClickHandler(Unit unitClicked)
         {
-            //Set gun as true and redraw
-            Globals.flags[1] = true;
-            thisPlayer.GetPlayerGunSound().Play();
+            
             if (unitClicked.alive == true)
             {
                 unitClicked.DealDamage(thisPlayer.GetGunDamage());
@@ -635,7 +662,10 @@ namespace DoomCloneV2
         /// <param name="e">The arguments of that particular MouseClick</param>
         private void MouseClicker(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            for(int i=0; i < units.Count; i++)
+            //Set gun as true and redraw
+            Globals.flags[1] = true;
+            thisPlayer.GetPlayerGunSound().Play();
+            for (int i=0; i < units.Count; i++)
             {
                 if (ClickedOn(units[i], e.X, e.Y) == 1)
                 {
@@ -684,669 +714,13 @@ namespace DoomCloneV2
             }
             
         }
-    }/// <summary>
-    /// Unit is the class responsible for holding the information required to draw an object when viewed by the palyer,
-    ///and also as an area to stroe unit-instance-specific information such as a damage and health
-    /// </summary>
-    public class Unit
-    {
-        Bitmap unitImage;
-        Bitmap deadUnitImage;
-        Bitmap returnImage;
-        private int health = 20;
-        public Point topLeft = new Point(-1, -1);
-        public Point bottomRight = new Point(-1, -1);
-        public bool alive = true;
-        /// <summary>
-        /// setUpUnit is a constructor but like later
-        /// </summary>
-        /// <param name="unitImage">Provides a bitmap image to be read whenever the unit is 'alive'</param>
-        /// <param name="deadUnitImage">Provides a bitmap image to be read/drawn wheenever the unit is 'dead'</param>
-        public void setUpUnit(Bitmap unitImage,Bitmap deadUnitImage)
-        {
-            this.unitImage = unitImage;
-            this.deadUnitImage = deadUnitImage;
-            this.returnImage = this.unitImage;
-        }
-        /// <summary>
-        /// GetUnitImage in an accessor method to get the current image set as the unit's viewable image
-        /// </summary>
-        /// <returns>Returns the current image set as the unit's viewable image</returns>
-        public Bitmap getUnitImage()
-        {
-            return this.returnImage;
-        }
-        /// <summary>
-        /// setUnitImage in an accessor method to set the current image set as the unit's viewable image
-        /// </summary>
-        public void setUnitImage(Bitmap img)
-        {
-            this.unitImage=img;
-        }
-        /// <summary>
-        /// DealDamage in an accessor method used to edit the unit's current health, and perform required changes to the unit's state
-        /// such as making it's viewable image 'dead'
-        /// </summary>
-        public void DealDamage(int damage)
-        {
-            this.health -= damage;
-            if (this.health <= 0)
-            {
-                this.returnImage = deadUnitImage;
-            }
-        }
     }
-    public class Gun
-    {
-        /*
-         * muzzle_Flare -> Flare_[bullet Type]_[DamageRate]_[Name]
-receiver -> Receiver_[Camo Code]_[DamageRate]_[Name]
-ejection-> Ejection_[bullet Type]_[DamageRate]_[Name]
-front_Body-> Front_Body_[Camo Code]_[bullet Type]_[Name]
-barrel-> Barrel_[Camo Code]_[DamageRate]_[Name]
-magazine-> Magazine_[bullet Type]_[Ammo_Cap]_[Name]
-grip-> Grip_[Camo Code]_[Grip_Type]_[Name]
-arm-> Arm_[Uniform Code]_[Armour_Code]_[Name]
-hand-> Hand_[Race Code]_[Style Code]_[Name]
-rail-> Rail_[Bullet Type]_[DamageRate]_[Name]
-sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
-         * */
-        int damage;
-        String camo_Code; // 000-Universal // 001- Tiger Strike // 002-Pinky
-        String bullet_Type; // 000-Universal // 001 - Bullets //002 Rail
-        String damage_Rate; // 000-Universal // 001 -Medium //002-Heavy
-        String ammo_Cap; // 000 20-30 Rounds // 001 - 60-100 // 002 -1-5
-        String uniform_Code; // 000 - Universal // 001 - Green Camo // 002 - Navy 
-        String armour_Code; // 000-No Armour
-        String race_Code;// 000-Human
-        String style_Code;// 000- Ungloved White
-        String sight_Code;// 000 - Irons/No scope // 001 -Red dot
-        String grip_Type; // 000 - Medium Grip // 001 -Bipod // 002- L        Bitmap muzzle_Flare;
-        Bitmap receiver;
-        Bitmap ejection;
-        Bitmap front_Body;
-        Bitmap barrel;
-        Bitmap magazine;
-        Bitmap grip;
-        Bitmap arm;
-        Bitmap hand;
-        Bitmap token;
-        Bitmap rail;
-        Bitmap sight;
-        Bitmap muzzle_Flare;
-        Bitmap picture;
-        Bitmap pictureShoot;
-        System.Media.SoundPlayer player;
-        public Gun(String camo_Code, String bullet_Type, String damage_Rate, String ammo_Cap, String uniform_Code, String armour_Code, String race_Code, String style_Code, String sight_Code,String grip_Type,int damage)
-        {
-            this.damage=damage;
-            this.camo_Code=camo_Code; // 000-Universal // 001- Tiger Strike // 002-Pinky
-            this.bullet_Type=bullet_Type; // 000-Universal // 001 - Bullets //002 Rail
-            this.damage_Rate=damage_Rate; // 000-Universal // 001 -Medium //002-Heavy
-            this.ammo_Cap=ammo_Cap; // 000 20-30 Rounds // 001 - 60-100 // 002 -1-5
-            this.uniform_Code=uniform_Code; // 000 - Universal // 001 - Green Camo // 002 - Navy 
-            this.armour_Code=armour_Code; // 000-No Armour
-            this.race_Code=race_Code;// 000-Human
-            this.style_Code=style_Code;// 000- Ungloved White
-            this.sight_Code=sight_Code;// 000 - Irons/No scope // 001 -Red dot
-            this.grip_Type=grip_Type; 
-            this.buildGun();
-        }
-        private void buildGun()
-        {
-            setComponent("Barrel");
-            setComponent("Muzzle_Flare");
-            setComponent("Hand");
-            setComponent("Grip");
-            setComponent("Ejection");
-            setComponent("Rail");
-            setComponent("Sight");
-            setComponent("Front_Body");
-            setComponent("Receiver");
-
-            setComponent("Token");
-            setComponent("Arm");
-            setComponent("Magazine");
-            picture = new Bitmap(arm.Width,arm.Height, PixelFormat.Format32bppPArgb);
-            Graphics g = Graphics.FromImage(picture);
-            g.DrawImage(this.barrel, new Point(0,0));
-            g.DrawImage(this.hand, new Point(0, 0));
-            g.DrawImage(this.grip, new Point(0, 0));
-            g.DrawImage(this.rail, new Point(0, 0));
-            g.DrawImage(this.sight, new Point(0, 0));
-            g.DrawImage(this.front_Body, new Point(0, 0));
-            g.DrawImage(this.receiver, new Point(0, 0));
-
-            g.DrawImage(this.ejection, new Point(0, 0));
-            g.DrawImage(this.token, new Point(0, 0));
-            g.DrawImage(this.arm, new Point(0, 0));
-            g.DrawImage(this.magazine, new Point(0, 0));
-            g.Dispose();
-            pictureShoot = new Bitmap(arm.Width, arm.Height, PixelFormat.Format32bppPArgb);
-            g = Graphics.FromImage(pictureShoot);
-            g.DrawImage(this.barrel, new Point(0, 0));
-            g.DrawImage(this.muzzle_Flare, new Point(0, 0));
-            g.DrawImage(this.hand, new Point(0, 0));
-            g.DrawImage(this.grip, new Point(0, 0));
-            g.DrawImage(this.rail, new Point(0, 0));
-            g.DrawImage(this.sight, new Point(0, 0));
-            g.DrawImage(this.front_Body, new Point(0, 0));
-            g.DrawImage(this.receiver, new Point(0, 0));
-
-            g.DrawImage(this.ejection, new Point(0, 0));
-            g.DrawImage(this.token, new Point(0, 0));
-            g.DrawImage(this.arm, new Point(0, 0));
-            g.DrawImage(this.magazine, new Point(0, 0));
-            g.RotateTransform(20);
-            g.Dispose();
-            player = new System.Media.SoundPlayer("Resources/Sound/Bang_"+this.bullet_Type+"_"+this.damage_Rate+".wav");
-            Debug.WriteLine("Resources/Sound/Bang_" + this.bullet_Type + "_" + this.damage_Rate + ".wav");
-        }
-
-        public System.Media.SoundPlayer GetSound()
-        {
-            return this.player;
-        }
-        public Bitmap GetImage()
-        {
-            return this.picture;
-        }
-        public int GetDamage()
-        {
-            return this.damage;
-        }
-        public Bitmap GetImageShoot()
-        {
-            return this.pictureShoot;
-        }
-        private void setComponent(String gunPart)
-        {
-            Random rand = new Random();
-            string RunningPath = AppDomain.CurrentDomain.BaseDirectory;
-
-            String imgPath = RunningPath + "Resources\\Images\\Gun_Parts\\" + gunPart + "\\";
-            String[] possibleImgs = System.IO.Directory.GetFiles(imgPath, "*.png");
-            List<String> relevantImgs = new List<String>();
-            for(int i=0; i < possibleImgs.Count(); i++)
-            {
-                String fileName = possibleImgs[i].Substring(imgPath.Length, possibleImgs[i].Length - imgPath.Length);
-                int firstVarStart = gunPart.Length+1;
-                int secondVarStart = gunPart.Length + 5;
-                switch (gunPart)
-                {
-                    case "Barrel":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000")|| fileName.Substring(firstVarStart, 3).Equals(this.camo_Code))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.damage_Rate))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Muzzle_Flare":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.bullet_Type))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.damage_Rate))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Receiver":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.camo_Code))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.damage_Rate))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Ejection":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.bullet_Type))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.damage_Rate))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Front_Body":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.camo_Code))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.bullet_Type))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Magazine":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.bullet_Type))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.ammo_Cap))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Grip":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.camo_Code))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals(this.grip_Type))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Arm":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.uniform_Code))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals(this.armour_Code))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Hand":
-                        if (fileName.Substring(firstVarStart, 3).Equals(this.race_Code))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals(this.style_Code))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Rail":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.bullet_Type))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.damage_Rate))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Sight":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.camo_Code))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals(this.sight_Code))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Token":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.grip_Type))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals(this.style_Code))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-            int numberPicked = rand.Next(relevantImgs.Count());
-            switch (gunPart)
-            {
-                case "Barrel":
-                    this.barrel = new Bitmap(relevantImgs[numberPicked]);
-                    
-                    break;
-                case "Muzzle_Flare":
-                    this.muzzle_Flare = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Receiver":
-                    this.receiver = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Ejection":
-                    this.ejection = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Front_Body":
-                    this.front_Body = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Magazine":
-                    this.magazine = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Grip":
-                    this.grip = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Arm":
-                    this.arm = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Hand":
-                    this.hand = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Rail":
-                    this.rail = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Sight":
-                    this.sight = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Token":
-                    this.token = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                default:
-                    Debug.WriteLine("Unkown Switch "+gunPart);
-                    break;
-            }
-
-
-        }
-    }
-    public class Cell
-    {
-
-        Color drawColor;
-        Color floorColor;
-        Color roofColor;
-        bool mat = false;
-        bool isUnitOnCell = false;
-        Unit unitOnCell = null;
-        public Cell(bool mat, Color drawColor,Color floorColor, Color roofColor)
-        {
-            this.mat = mat;
-            this.drawColor = drawColor;
-            this.floorColor = floorColor;
-            this.roofColor = roofColor;
-        }
-        public Unit createUnit(Bitmap unitPic, Bitmap unitPicDead)
-        {
-            this.isUnitOnCell = true;
-            this.unitOnCell = new Unit();
-            this.unitOnCell.setUpUnit(unitPic,unitPicDead);
-            return this.unitOnCell;
-        }
-        public bool GetisUnitPresent()
-        {
-            return this.isUnitOnCell;
-        }
-        public Unit GetUnitOnCell()
-        {
-            if (GetisUnitPresent())
-            {
-                return this.unitOnCell;
-            }
-            else 
-            { 
-                return null; 
-            }
-        }
-        public bool GetMat()
-        {
-            return this.mat;
-        }
-        public void setMat(bool mat,Color color)
-        {
-            this.mat = mat;
-            this.drawColor = color;
-        }
-        
-        public void Draw(Graphics g, int centreLine, int loopFromBack, int loopFromLeft, int maxDepth, int screenLength, int screenHeight, bool drawLines, bool drawLeftMat,bool playerOn=false)
-        {
-
-            Point[] points;
-            int drawLength = screenLength/(((maxDepth-loopFromBack)*2)-1);
-            int drawHeight = screenHeight / (((maxDepth - loopFromBack) * 2) - 1);
-            int drawLengthPrior = screenLength / (((maxDepth - loopFromBack+1) * 2) - 1);
-            int drawHeightPrior = screenHeight / (((maxDepth - loopFromBack+1) * 2) - 1);
-            int[] topLeft = new int[] { (drawLength * (loopFromLeft-1)), screenHeight / 2 - (drawHeight / 2) };
-            int[] topRight = new int[] { (drawLength * (loopFromLeft-1)) +drawLength, screenHeight / 2 - (drawHeight / 2) };
-            int[] bottomLeft = new int[] { drawLength * (loopFromLeft-1), screenHeight / 2 - (drawHeight / 2) + drawHeight}; 
-            int[] bottomRight = new int[] { drawLength * (loopFromLeft-1) + drawLength, screenHeight / 2 - (drawHeight / 2) + drawHeight };
-            int PriorLoop = loopFromLeft;
-            int[] topLeftPrior = new int[] { drawLengthPrior * (PriorLoop), screenHeight / 2 - (drawHeightPrior / 2) };
-            int[] bottomRightPrior = new int[] { drawLengthPrior * (PriorLoop) + drawLengthPrior, screenHeight / 2 - (drawHeightPrior / 2) + drawHeightPrior };
-            int[] topRightPrior = new int[] {(drawLengthPrior * (PriorLoop)) + drawLengthPrior, screenHeight / 2 - (drawHeightPrior / 2) }; 
-            int[] bottomLeftPrior = new int[] {drawLengthPrior * (PriorLoop), screenHeight / 2 - (drawHeightPrior / 2) + drawHeightPrior };
-
-            if (Globals.drawFill)
-            {
-                //IfBackRow
-                if (loopFromBack == 0)
-                {
-                    Color drawing = this.drawColor;
-                    if (this.mat == false)
-                    {
-                        drawing = Color.Gray;
-                    }
-                    g.FillRectangle(new SolidBrush(drawing), drawLength * (loopFromLeft), screenHeight / 2 - (drawHeight / 2), drawLength, drawHeight);
-                }
-                if (loopFromBack == 1 && maxDepth == Globals.maxView)
-                {
-                    Color drawing = this.drawColor;
-                    if (this.mat == false)
-                    {
-                        drawing = Color.FromArgb(75, 0, 0, 0);
-                    }
-                    g.FillRectangle(new SolidBrush(drawing), drawLength * (loopFromLeft), screenHeight / 2 - (drawHeight / 2), drawLength, drawHeight);
-                }
-                if (loopFromBack > 0)
-                {
-
-                    if (drawLeftMat == false)
-                    {
-                        //DrawFloor
-                        points = new Point[] { new Point(bottomLeft[0], bottomLeft[1]), new Point(bottomLeftPrior[0], bottomLeftPrior[1]), new Point(bottomRightPrior[0], bottomRightPrior[1]), new Point(bottomRight[0], bottomRight[1]) };
-                        g.FillPolygon(new SolidBrush(this.floorColor), points);
-                        //DrawRoof
-                        points = new Point[] { new Point(topLeft[0], topLeft[1]), new Point(topRight[0], topRight[1]), new Point(topRightPrior[0], topRightPrior[1]), new Point(topLeftPrior[0], topLeftPrior[1]) };
-                        g.FillPolygon(new SolidBrush(this.roofColor), points);
-                    }
-                    else
-                    {
-                        //DrawFloor
-                        points = new Point[] { new Point(bottomLeft[0], bottomLeft[1]), new Point(bottomLeft[0], bottomLeftPrior[1]), new Point(bottomRightPrior[0], bottomRightPrior[1]), new Point(bottomRight[0], bottomRight[1]) };
-                        g.FillPolygon(new SolidBrush(this.floorColor), points);
-                        //DrawRoof
-                        points = new Point[] { new Point(topLeft[0], topLeft[1]), new Point(topRight[0], topRight[1]), new Point(topRightPrior[0], topRightPrior[1]), new Point(topLeft[0], topLeftPrior[1]) };
-                        g.FillPolygon(new SolidBrush(this.roofColor), points);
-                    }
-                    if (this.mat)
-                    {
-                        //DrawToRight
-                        if (centreLine == 0)
-                        {
-                            points = new Point[] { new Point((drawLength * (loopFromLeft - 1)) + drawLength, screenHeight / 2 - (drawHeight / 2)), new Point((drawLengthPrior * (loopFromLeft)) + drawLengthPrior, screenHeight / 2 - (drawHeightPrior / 2)), new Point(drawLengthPrior * (loopFromLeft) + drawLengthPrior, screenHeight / 2 - (drawHeightPrior / 2) + drawHeightPrior), new Point(drawLength * (loopFromLeft - 1) + drawLength, screenHeight / 2 - (drawHeight / 2) + drawHeight) };
-                            g.FillPolygon(new SolidBrush(Color.Red), points);
-                        }
-                        //DrawToLeft
-                        else if (centreLine == 2 && !drawLeftMat)
-                        {
-                            points = new Point[] { new Point(topLeft[0], topLeft[1]), new Point(bottomLeft[0], bottomLeft[1]), new Point(bottomLeftPrior[0], bottomLeftPrior[1]), new Point(topLeftPrior[0], topLeftPrior[1]) };
-                            g.FillPolygon(new SolidBrush(Color.Blue), points);
-                        }
-                        if (!playerOn)
-                        {
-                            g.FillRectangle(new SolidBrush(this.drawColor), drawLength * (loopFromLeft - 1), screenHeight / 2 - (drawHeight / 2), drawLength, drawHeight);
-
-                        }
-
-
-                    }
-                    else
-                    {
-                        if (isUnitOnCell)
-                        {
-                            Bitmap drawImage = unitOnCell.getUnitImage();
-                            //drawImage=ResizeImage(drawImage,drawImage.Width / (((maxDepth - loopFromBack) * 2) -3 ), drawImage.Height / (((maxDepth - loopFromBack) * 2) -3));
-                            drawImage = Globals.ResizeImage(drawImage, drawLength, drawHeight);
-                            g.DrawImage(drawImage, new Point(topLeft[0], topLeft[1]));
-                            unitOnCell.topLeft = new Point(topLeft[0], topLeft[1]);
-                            unitOnCell.bottomRight = new Point(topLeft[0] + drawImage.Width, topLeft[1] + drawImage.Height);
-                            Random rand = new Random();
-                            if (rand.Next(5) == 3 && unitOnCell.alive)
-                            {
-                                if (rand.Next(2) == 0)
-                                {
-                                    System.Media.SoundPlayer player = new System.Media.SoundPlayer("Resources/Sound/Boof.wav");
-                                    player.Play();
-                                }
-                                else
-                                {
-                                    System.Media.SoundPlayer player = new System.Media.SoundPlayer("Resources/Sound/Boof2.wav");
-                                    player.Play();
-                                }
-                            }
-
-
-
-                        }
-                    }
-
-
-                }
-            }
-            
-            if (drawLines )
-            {
-                //Draw outline
-                g.DrawRectangle(new Pen(Color.Black), drawLength * (loopFromLeft), screenHeight / 2 - (drawHeight / 2), drawLength, drawHeight);
-                if(loopFromBack > 0)
-                {
-                    //Draw connectors
-                    //top left
-                    g.DrawLine(new Pen(Color.Black), drawLength * (loopFromLeft), screenHeight / 2 - (drawHeight / 2),/*draw to */ drawLengthPrior * (loopFromLeft + 1), screenHeight / 2 - (drawHeightPrior / 2));
-                    //top right
-                    g.DrawLine(new Pen(Color.Black), (drawLength * (loopFromLeft)) + drawLength, screenHeight / 2 - (drawHeight / 2),/*draw to */ (drawLengthPrior * (loopFromLeft + 1)) + drawLengthPrior, screenHeight / 2 - (drawHeightPrior / 2));
-                    //bottom left
-                    g.DrawLine(new Pen(Color.Black), drawLength * (loopFromLeft), screenHeight / 2 - (drawHeight / 2) + drawHeight,/*draw to */ drawLengthPrior * (loopFromLeft + 1), screenHeight / 2 - (drawHeightPrior / 2) + drawHeightPrior);
-                    //bottom right
-                    g.DrawLine(new Pen(Color.Black),bottomRight[0],bottomRight[1],bottomLeft[0],bottomLeft[1]);
-
-                }
-
-
-
-
-            } 
-        }
-    }
+   
+   
     public enum Directions
     {
         UP,DOWN,LEFT,RIGHT,NULL
     }
     
-    public class Player
-    {
-        private int xPos { get; set; }
-        private int yPos { get; set; }
-        private Gun playerGun;
-        public Directions dir = Directions.UP;
-        public Bitmap playerView;
-      
-        public Player(int x, int y,int gunType)
-        {
-            CreateGun();
-            this.yPos = y;
-            this.xPos = x;
-            
-        }
-        private void CreateGun()
-        {
-            Random rand = new Random();
-            String Camo = "00" + (rand.Next(3) + 2);
-            String Damage = "00" + (rand.Next(2) + 1);
-            String Sight = "00" + (rand.Next(2));
-            String Grip = "00" + (rand.Next(3) );
-            String Ammo = "00" + (rand.Next(2));
-            int damage = rand.Next(21);
-            Debug.WriteLine("New Gun with Camo/Damage: " + Camo + " \\ " + Damage);
-            this.playerGun = new Gun(Camo, "001",Damage,Ammo, "001", "000", "000", "000",Sight,Grip,damage);
-            this.playerView = GetPlayerGun();
-        }
-        public int GetGunDamage()
-        {
-            return this.playerGun.GetDamage();
-        }
-        public System.Media.SoundPlayer GetPlayerGunSOund()
-        {
-            return this.playerGun.GetSound();
-        }
-        public void RefreshGun()
-        {
-            this.CreateGun();
-        }
-        public Bitmap GetPlayerGun()
-        {
-            return playerGun.GetImage();
-        }
-        public Bitmap GetPlayerGunShoot()
-        {
-            return playerGun.GetImageShoot();
-        }
-        public System.Media.SoundPlayer GetPlayerGunSound()
-        {
-            return playerGun.GetSound();
-        }
-        public int GetX()
-        {
-            return xPos;
-        }
-        public int Gety()
-        {
-            return yPos;
-        }
-        public int SetY(int i)
-        {
-            this.yPos = i;
-            return yPos;
-        }
-        public int SetX(int i)
-        { 
-            this.xPos = i;
-            return xPos;
-        }
-        public void ChangeDirection(String direction)
-        {
-            if(direction.Equals( "Right"))
-            {
-                switch (this.dir)
-                {
-                    case Directions.DOWN:
-                        this.dir = Directions.LEFT;
-                        break;
-                    case Directions.RIGHT:
-                        this.dir = Directions.DOWN;
-                        break;
-                    case Directions.UP:
-                        this.dir = Directions.RIGHT;
-                        break;
-                    case Directions.LEFT:
-                        this.dir = Directions.UP;
-                        break;
-                }
-            }
-            else
-            {
-                switch (this.dir)
-                {
-                    case Directions.DOWN:
-                        this.dir = Directions.RIGHT;
-                        break;
-                    case Directions.RIGHT:
-                        this.dir = Directions.UP;
-                        break;
-                    case Directions.UP:
-                        this.dir = Directions.LEFT;
-                        break;
-                    case Directions.LEFT:
-                        this.dir = Directions.DOWN;
-                        break;
-                }
-
-            }
-        }
-    }
+    
 }
