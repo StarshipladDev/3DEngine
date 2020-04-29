@@ -21,11 +21,18 @@ progress and follow better SDLC practice.
 
 **Displaying user view with scaled (based on distance) sprites**
 
-![DoomClone](ColorCellEnemies.PNG)
+![DoomClone](ColorCellsEnemies.PNG)
 
 **Displaying user view with 1:1 window size scaled 'player character view'**
 
 ![DoomClone](ColorCellEnemiesGun.PNG)
+## Latest Build
+
+21/04/2020 - 0.01a- Inital Build
+
+## Latest Update
+
+29/04/2020 - TCP Branch Added Clients(Press 'P' to create, 'K' To send Time) and Server (Press'O')
 
 ## Next Build
 

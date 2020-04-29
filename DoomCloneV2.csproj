@@ -48,11 +48,16 @@
   <ItemGroup>
     <Compile Include="Cell.cs" />
     <Compile Include="Client.cs" />
+    <Compile Include="Command.cs" />
+    <Compile Include="Globals.cs" />
     <Compile Include="Gun.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="Server.cs" />
+    <Compile Include="ThreadFunctions.cs" />
     <Compile Include="Unit.cs" />
-    <Compile Include="Form1.cs" />
+    <Compile Include="Form1.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
@@ -85,6 +90,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="config.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\Images\Enemy\Devil\Devil_Death.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

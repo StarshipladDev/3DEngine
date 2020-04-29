@@ -13,10 +13,11 @@ C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\bin\Debug\DoomCloneV2.exe.
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\bin\Debug\DoomCloneV2.exe
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\bin\Debug\DoomCloneV2.pdb
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\obj\Debug\DoomCloneV2.csprojAssemblyReference.cache
-C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\obj\Debug\DoomCloneV2.Globals.resources
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\obj\Debug\DoomCloneV2.Properties.Resources.resources
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\obj\Debug\DoomCloneV2.csproj.GenerateResource.cache
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\obj\Debug\DoomCloneV2.csproj.CoreCompileInputs.cache
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\obj\Debug\DoomCloneV2.exe
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\obj\Debug\DoomCloneV2.pdb
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\bin\Debug\Resources\Images\Enemy\Devil\Devil_Death.png
+C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\obj\Debug\DoomCloneV2.Form1.resources
+C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\bin\Debug\config.xml

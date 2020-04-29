@@ -6,84 +6,17 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
+using System.Xml;
 
 namespace DoomCloneV2
 {
- /**
-  * Globals is a static/constant class used to convey information between listeners and the main form while the application runs.
-  * 
-  */
-    public static class Globals
-    {
-        public static bool drawGun = true;
-        public static bool drawLines = true;
-        public static bool drawFill = true;
-        public static bool drawn = true;
-        public const int maxView = 20;
-        public const int cellSize = 20;
-        //Draw directin /Drew gun //Turn gun back
-        public static bool[] flags = new bool[5];
-        public static int[] animations = new int[5];
-        public static bool readyToDraw = true;
-        public const int MAXFRAMES=8;
-        public const int INTERVALTIMEMILISECONDS = 1000/2;
-        public const int MaxPossibleDepth =20;
-
-        /// <summary>
-        /// Stolen from https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp 04/03/2020
-        /// Resize the image to the specified width and height.
-        /// </summary>
-        /// <param name="image">The image to resize.</param>
-        /// <param name="width">The width to resize to.</param>
-        /// <param name="height">The height to resize to.</param>
-        /// <returns>The resized image.</returns>
-        public static Bitmap ResizeImage(Image image, int width, int height)
-        {
-            var destRect = new Rectangle(0, 0, width, height);
-            var destImage = new Bitmap(width, height);
-
-            destImage.SetResolution(image.HorizontalResolution, image.VerticalResolution);
-
-            using (var graphics = Graphics.FromImage(destImage))
-            {
-                graphics.CompositingMode = CompositingMode.SourceCopy;
-                graphics.CompositingQuality = CompositingQuality.HighQuality;
-                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                graphics.SmoothingMode = SmoothingMode.HighQuality;
-                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-                using (var wrapMode = new ImageAttributes())
-                {
-                    wrapMode.SetWrapMode(WrapMode.TileFlipXY);
-                    graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
-                }
-            }
-
-            return destImage;
-        }
-        
-        /// <summary>
-        /// Crops a sub-rectangle of a given image
-        /// </summary>
-        /// <param name="source">The imagee file to draw a sub-image from</param>
-        /// <param name="section">The specified size and position of the rectangle subimage</param>
-        /// <returns></returns>
-        public static Bitmap CropImage(Bitmap source, Rectangle section)
-        {
-            var bitmap = new Bitmap(section.Width, section.Height);
-            using (var g = Graphics.FromImage(bitmap))
-            {
-                g.DrawImage(source, 0, 0, section, GraphicsUnit.Pixel);
-                return bitmap;
-            }
-        }
-    }
     /// <summary>
     /// Form1 is the Primary form component that runs when openeing the .exe
     /// </summary>
@@ -93,20 +26,25 @@ namespace DoomCloneV2
         Player thisPlayer = new Player(4,4,1);
         Directions switcher;
         System.Timers.Timer aTimer;
-        
+        Server server = null;
+        Client thisClient = null;
         List<Unit> units = new List<Unit>();
         /// <summary>
         /// This constructor creates a Form. Parameters should be specified in <see cref="Globals"/>
         /// </summary>
         public Form1()
         {
-
+            ReadConfig();
             //this.SetStyle(ControlStyles.OptimizedDoubleBuffer,true);
             //this.SetStyle(ControlStyles.AllPaintingInWmPaint, true);
             //this.SetStyle(ControlStyles.UserPaint, true);
             for (int i=0; i < Globals.animations.Length; i++)
             {
                 Globals.animations[i] = 0;
+            }
+            for (int i = 0; i < Globals.flags.Length; i++)
+            {
+                Globals.flags[i] = false;
             }
             thisPlayer.playerView = Globals.ResizeImage(thisPlayer.playerView, this.Width, this.Height);
             Random rand = new Random();
@@ -151,6 +89,31 @@ namespace DoomCloneV2
             //Print Cell
             PrintMap();
             InitializeComponent();
+        }
+        public static void ReadConfig()
+        {
+            try
+            {
+
+                FileStream configFile = File.OpenRead("config.xml");
+                long configFileContentsLength = configFile.Length;
+                Byte[] configFileContentsByte = new Byte[configFileContentsLength];
+                configFile.Read(configFileContentsByte, 0, (int)configFileContentsLength);
+                String configFileContents = Encoding.ASCII.GetString(configFileContentsByte);
+                Debug.WriteLine(configFileContents);
+                configFile.Close();
+                XmlDocument configXml = new XmlDocument();
+                configXml.InnerXml = configFileContents;
+                Debug.WriteLine("Port is :"+configXml.SelectSingleNode("Config/Port").InnerText);
+                Debug.WriteLine("Address is :" + configXml.SelectSingleNode("Config/ServerAddress").InnerText);
+                Globals.port = configXml.SelectSingleNode("Config/Port").InnerText;
+                Globals.Address = configXml.SelectSingleNode("Config/ServerAddress").InnerText;
+
+            }
+            catch(Exception e)
+            {
+                Debug.WriteLine("Error getting Config");
+            }
         }
         /// <summary>
         /// TimerCall is the eventlistener that runs every 'tick', that occurs every 'INTERVALTIMEMILISECONDS', specified in <see cref="Globals"/>
@@ -256,7 +219,7 @@ namespace DoomCloneV2
                         if (thisPlayer.dir == Directions.UP)
                         {
                             pickX = (offset - halfScan) + loopFromLeft;
-                            pickY = thisPlayer.Gety() + 1 - (maxDepth - loopFromBack);
+                            pickY =( thisPlayer.Gety() + 1 )- (maxDepth - loopFromBack);
                         }
                         else if (thisPlayer.dir == Directions.DOWN)
                         {
@@ -271,7 +234,7 @@ namespace DoomCloneV2
                         else if (thisPlayer.dir == Directions.RIGHT)
                         {
                             pickY = (offset - halfScan) + loopFromLeft;
-                            pickX = thisPlayer.GetX() - 1 - (maxDepth - loopFromBack);
+                            pickX = (thisPlayer.GetX() - 1 )+ (maxDepth - loopFromBack);
                         }
                         if(pickX>=0 && pickX<cellList.GetLength(0) && pickY>=0 && pickY < cellList.GetLength(1))
                         {
@@ -330,10 +293,26 @@ namespace DoomCloneV2
             {
                 if (Globals.flags[0])
                 {
-                    Globals.flags[0] = false;
+                    
                     g.DrawString("DrawingMap! ", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, this.Height / 2);
                     g.DrawString("Your direction is : " + thisPlayer.dir, new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 20);
+                    g.DrawString("Your MaxDepth is : " + maxDepth, new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
 
+
+                }
+                if (Globals.flags[3])
+                {
+                    g.DrawString("Server Started!", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
+
+                }
+                if (Globals.flags[4])
+                {
+                    g.DrawString("Client Started!", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
+
+                }
+                if (Globals.flags[5])
+                {
+                    g.DrawString("Messaged Received From Client: "+Globals.Message, new Font("Arial", 16), new SolidBrush(Color.Red),0, (this.Height / 2) + 60);
 
                 }
                 //DrawGunShooting
@@ -393,16 +372,17 @@ namespace DoomCloneV2
             {
                 picker = cellList.GetLength(0)-thisPlayer.GetX();
             }
-            else if (thisPlayer.dir == Directions.LEFT)
+            else
             {
                 picker = thisPlayer.GetX() + 1;
             }
-            if (picker > Globals.MaxPossibleDepth)
+            if (picker >= Globals.MaxPossibleDepth)
                 {
                     return Globals.MaxPossibleDepth;
                 }
-                else
+            else
                 {
+
                     return picker;
                 }
         }
@@ -426,12 +406,10 @@ namespace DoomCloneV2
             }
             else
             {
-                if (x > 0)
+                if (x > 1)
                 {
                     if (!cellList[x - 1, y].GetMat())
                     {
-
-
                         this.thisPlayer.SetX(this.thisPlayer.GetX() - 1);
                     }
                 }
@@ -447,23 +425,24 @@ namespace DoomCloneV2
             int y = thisPlayer.Gety();
             if (up)
             {
+                if (y > 1)
+                {
+                    if (!cellList[x, y - 1].GetMat())
+                    {
+
+                        this.thisPlayer.SetY(this.thisPlayer.Gety() - 1);
+                    }
+                }
+                
+            }
+            else
+            {
                 if (y < cellList.GetLength(1) - 1)
                 {
                     if (!cellList[x, y + 1].GetMat())
                     {
 
                         this.thisPlayer.SetY(this.thisPlayer.Gety() + 1);
-                    }
-                }
-            }
-            else
-            {
-                if (y > 0)
-                {
-                    if (!cellList[x, y - 1].GetMat())
-                    {
-
-                        this.thisPlayer.SetY(this.thisPlayer.Gety() - 1);
                     }
                 }
             }
@@ -502,16 +481,16 @@ namespace DoomCloneV2
                 switch (playersdir)
                 {
                     case Directions.UP:
-                        ChangeY(true);
+                        ChangeY(false);
                         break;
                     case Directions.DOWN:
-                        ChangeY(false);
+                        ChangeY(true);
                         break;
                     case Directions.LEFT:
                         ChangeX(true);
                         break;
                     case Directions.RIGHT:
-                        ChangeX(true);
+                        ChangeX(false);
                         break;
                 }
 
@@ -522,16 +501,16 @@ namespace DoomCloneV2
                 switch (playersdir)
                 {
                     case Directions.UP:
-                        ChangeY(false);
+                        ChangeY(true);
                         break;
                     case Directions.DOWN:
-                        ChangeY(true);
+                        ChangeY(false);
                         break;
                     case Directions.LEFT:
                         ChangeX(false);
                         break;
                     case Directions.RIGHT:
-                        ChangeX(false);
+                        ChangeX(true);
                         break;
                 }
 
@@ -548,10 +527,10 @@ namespace DoomCloneV2
                         ChangeX(false);
                         break;
                     case Directions.LEFT:
-                        ChangeY(false);
+                        ChangeY(true);
                         break;
                     case Directions.RIGHT:
-                        ChangeY(true);
+                        ChangeY(false);
                         break;
                 }
 
@@ -567,15 +546,15 @@ namespace DoomCloneV2
                         ChangeX(true);
                         break;
                     case Directions.LEFT:
-                        ChangeY(true);
+                        ChangeY(false);
                         break;
                     case Directions.RIGHT:
-                        ChangeY(false);
+                        ChangeY(true);
                         break;
                 }
 
             }
-            if (e.KeyCode == Keys.P)
+            if (e.KeyCode == Keys.Q)
             {
                 this.thisPlayer.RefreshGun();
                 RefreshPlayerView(this.thisPlayer.playerView);
@@ -583,9 +562,41 @@ namespace DoomCloneV2
             }
             if (e.KeyCode == Keys.U)
             {
+                Globals.flags[0] = !Globals.flags[0];
+                Globals.flags[3] = false;
+                Globals.flags[4] = false;
                 PrintMap();
-                Globals.flags[0] = true;
 
+            }
+            if (e.KeyCode == Keys.O)
+            {
+                Thread f = new Thread(ThreadFunctions.ThreadRunnerServer);
+                f.Start();
+                Globals.flags[0] = false;
+                Globals.flags[3] = true;
+                Globals.flags[4] = false;
+
+            }
+            if (e.KeyCode == Keys.P)
+            {
+                Globals.flags[0] = false;
+                Globals.flags[3] = false;
+                Globals.flags[4] = true;
+                Thread f = new Thread(ThreadFunctions.ClientThread);
+                object args;
+                this.thisClient = new Client(Globals.port, Globals.Address,"The Client");
+                args = this.thisClient;
+                f.Start(args);
+            }
+            if (e.KeyCode == Keys.L)
+            {
+                Client c = new Client(Globals.port, "localhost", "New Client Thread");
+                Thread f = new Thread(ThreadFunctions.Write);
+                f.Start(c);
+            }
+            if (e.KeyCode == Keys.K)
+            {
+                thisClient.Write("Hey There From This Client at "+DateTime.Now);
             }
             this.Update();
             this.Invalidate();
@@ -715,7 +726,6 @@ namespace DoomCloneV2
             
         }
     }
-   
    
     public enum Directions
     {

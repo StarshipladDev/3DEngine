@@ -149,7 +149,7 @@ namespace DoomCloneV2
                 }
             }
 
-            if (drawLines || mat)
+            if (drawLines )
             {
                 //Draw outline
                 g.DrawRectangle(new Pen(Color.Black), drawLength * (loopFromLeft), screenHeight / 2 - (drawHeight / 2), drawLength, drawHeight);

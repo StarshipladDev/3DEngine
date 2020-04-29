@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing.Printing;
 using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -22,7 +23,15 @@ namespace DoomCloneV2
             this.port = port;
             this.client_Name = client_Name;
             Connect();
-            Debug.WriteLine("wang! /n");
+            Debug.WriteLine("Finished Setup Of Client! /n");
+        }
+        public String GetName()
+        {
+            return this.client_Name;
+        }
+        public void Print(String s)
+        {
+            Debug.WriteLine(GetName() + ":" + s);
         }
         /// <summary>
         /// Connect to a given server, to use as the location to write any further data using the <see cref="Write"/> method
@@ -53,45 +62,49 @@ namespace DoomCloneV2
                 Console.WriteLine("SocketException: {0}", e);
             }
 
-            Console.WriteLine("\n Press Enter to continue...");
         }
         public void Write(String writeData)
         {
-            Debug.Write(String.Format("{0} : Writing\n",client_Name));
+            writeData += "^";
+            Print("Begining Write Action");
             if (clientConnection!=null && ns!=null)
             try
             {
                 // Translate the passed message into ASCII and store it as a Byte array.
                 Byte[] data = System.Text.Encoding.ASCII.GetBytes(writeData);
+                    if (data == null)
+                    {
+                        throw (new ConnectionError ("Starshiplad's error!"));
+                    }
                 // Send the message to the connected TcpServer. 
                 this.ns.Write(data, 0, data.Length);
-                Console.WriteLine(String.Format("Sent: {0}\n", writeData));
-            }
+                Print(String.Format("Sent the following on Network Stream: {0}",writeData));
+                }
             catch(ConnectionError e)
             {
-                Debug.Write(e.Message);
+                    Print(e.Message+" As no Data");
             }
             catch(Exception e)
             {
                 Debug.WriteLine("Unhandled Exception Error");
             }
-            Debug.Write(String.Format("{0} : Finsihed Writing\n",client_Name));
+            Print("Finished Write");
 
         }
         public String Read()
         {
-            Debug.Write(String.Format("{0} Reading\n",client_Name));
             if (clientConnection != null && ns != null)
             {
                 String returnString = " ";
                 try
                 {
-                    Debug.Write("Return String is :"+returnString+"\n");
+
+                    Byte[] data = Encoding.ASCII.GetBytes("a");
+                    Print("Return String from server is :"+returnString+"\n");
                     while(!(returnString.Substring(returnString.Length - 1, 1).Equals("^")))
                     {
                         // Receive the TcpServer.response.
                         // Buffer to store the response bytes.
-                        Byte[] data = Encoding.ASCII.GetBytes("a");
                         // String to store the response ASCII representation.
                         String responseData = String.Empty;
                         // Read the first batch of the TcpServer response bytes.
@@ -99,8 +112,10 @@ namespace DoomCloneV2
                         responseData = System.Text.Encoding.ASCII.GetString(data, 0, bytes);
                         returnString += responseData;
                     }
-                    Debug.WriteLine("Got the following input from client: {1}{0}", returnString, client_Name);
+                    Print(String.Format("Got the following input from Server: {0}",returnString));
                     Debug.Write("{0} : Finsihed Reading\n", client_Name);
+                    Globals.flags[5] = true;
+                    Globals.Message = returnString;
                     return returnString;
 
                 }
@@ -113,8 +128,7 @@ namespace DoomCloneV2
                     Debug.WriteLine("Unhandled Exception Error: "+e.Message);
                 }
             }
-            Debug.Write(String.Format("{0} : Finsihed Reading with Error\n",client_Name));
-            return String.Format("{0} had an Err^",client_Name);
+            return String.Empty;
             
 
 
@@ -131,19 +145,18 @@ namespace DoomCloneV2
         }
         public void CloseClient()
         {
-            Debug.Write("{0} Ending connection ",client_Name);
+            Print("Ending Connection");
             // Close everything.
-            if (clientConnection!=null)
-            {
 
-                this.clientConnection.Close();
-            }
             if (ns != null)
             {
-
                 this.ns.Close();
             }
-            Debug.Write("{0} Ended connection ", client_Name);
+            if (clientConnection!=null)
+            {
+                this.clientConnection.Close();
+            }
+            Print("Ended COnnection");
         }
     }
     
