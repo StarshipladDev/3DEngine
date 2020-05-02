@@ -28,11 +28,11 @@ progress and follow better SDLC practice.
 ![DoomClone](ColorCellEnemiesGun.PNG)
 ## Latest Build
 
-21/04/2020 - 0.01a- Inital Build
+21/04/2020 - 0.01a- Initial Build
 
 ## Latest Update
 
-26/04/2020 - TCP Branch Begin
+02/05/2020 - TCP Branch Working (Marginally)
 
 ## Next Build
 
@@ -51,4 +51,23 @@ I planned on this project improving my skills in the following:
 >Correct SDLC practice
 
 ## Installing and Compiling:
-I'll add an executable and compile guide later
+At the moment, the program can be run by unzipping the 'Resources.zip' folder & replacing the bin/Debug 'Resources' folder with it
+The program can be run by opening *bin/DebugDoomCloneV2.exe*
+The *bin/Debug/config.xml* file contains the option to select your server address to connect to and your clientName when you connect
+The Program currently has the following commands:
+*W* Move your player Forward
+*S* Move your player Back
+*A* Move your player Left
+*D* Move your player Right
+*Q* Replace the gun currently equipped
+*O* Start a server on your local ip address
+*P* Start a client that connects with the address listed in config.xml
+*K* If client created, send a hello message over the network stream
+*L* Create a second local client. This client will not perform actions, but act as a faux connection
+*V* If they exist, move players[1] to the right
+*1* or *Spacebar* Display lines of each cell
+*2* Toggle color of cells
+*3* Toggle drawing player gun
+*4* Toggle displaying debug text
+
+
