@@ -37,12 +37,13 @@ namespace DoomCloneV2
             argArray = (Array)c1;
             TcpClient client = (TcpClient)argArray.GetValue(0);
             Server serv = (Server)argArray.GetValue(1);
+            NetworkStream nwStream = null;
             while (client != null &&  client.Connected)
             {
                 try
                 {
                     //---get the incoming data through a network stream---
-                    NetworkStream nwStream = client.GetStream();
+                    nwStream = client.GetStream();
                     byte[] buffer = new byte[client.ReceiveBufferSize];
                     //---read incoming stream---
                     int bytesRead = nwStream.Read(buffer, 0, client.ReceiveBufferSize);
@@ -50,14 +51,17 @@ namespace DoomCloneV2
                     string dataReceived = Encoding.ASCII.GetString(buffer, 0, bytesRead);
                     Debug.WriteLine("Server Received : " + dataReceived);
                     Server.SendMessage(dataReceived, serv);
+
                 }
                 catch(Exception e)
                 {
                     Debug.WriteLine("Server Error, aborting");
                     Thread.CurrentThread.Abort();
                 }
-
-               
+            }
+            if (nwStream != null)
+            {
+                nwStream.Close();
             }
             client.Close();
             Debug.WriteLine("Server Closing Thread : ");
@@ -65,16 +69,12 @@ namespace DoomCloneV2
         public static void ClientThread(object c1)
         {
             Client client = (Client)c1;
+            client.Write("PClient '"+client.GetName()+"' Connected!");
+            client.Write("COC"+client.GetID());
             while (true)
             {
                 String command = String.Empty;
                 command = client.Read();
-                if (command != String.Empty)
-                {
-                    Globals.flags[5] = true;
-                    Globals.Message = command;
-                    Debug.WriteLine(client.GetName() + " set command " + command + " that it just read");
-                }
             }
         }
         public static void Write(object c1)

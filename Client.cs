@@ -14,11 +14,15 @@ namespace DoomCloneV2
     {
         TcpClient clientConnection=null;
         NetworkStream ns = null;
+        int clientID = -1;
         String port;
         String address;
         String client_Name;
-        public Client(String port,String Address,String client_Name)
+        String data = String.Empty;
+        bool locker = false;
+        public Client(String port,String Address,String client_Name,int ID=-1)
         {
+            this.clientID = ID;
             this.address = Address;
             this.port = port;
             this.client_Name = client_Name;
@@ -31,7 +35,7 @@ namespace DoomCloneV2
         }
         public void Print(String s)
         {
-            Debug.WriteLine(GetName() + ":" + s);
+            Debug.WriteLine(GetName()+"("+clientID+")" + ":" + s);
         }
         /// <summary>
         /// Connect to a given server, to use as the location to write any further data using the <see cref="Write"/> method
@@ -63,6 +67,12 @@ namespace DoomCloneV2
             }
 
         }
+        public String GetCommands()
+        {
+            String returna = this.data;
+            this.data = String.Empty;
+            return returna.Trim();
+        }
         public void Write(String writeData)
         {
             writeData += "^";
@@ -77,6 +87,7 @@ namespace DoomCloneV2
                         throw (new ConnectionError ("Starshiplad's error!"));
                     }
                 // Send the message to the connected TcpServer. 
+
                 this.ns.Write(data, 0, data.Length);
                 Print(String.Format("Sent the following on Network Stream: {0}",writeData));
                 }
@@ -91,8 +102,25 @@ namespace DoomCloneV2
             Print("Finished Write");
 
         }
+        public int GetID()
+        {
+            return this.clientID;
+        }
+        public void SetName(String s)
+        {
+            this.client_Name = s;
+        }
+        public void SetID(int i)
+        {
+            this.clientID = i;
+        }
         public String Read()
         {
+            if (locker)
+            {
+                return String.Empty;
+            }
+            locker = true;
             if (clientConnection != null && ns != null)
             {
                 String returnString = " ";
@@ -100,8 +128,8 @@ namespace DoomCloneV2
                 {
 
                     Byte[] data = Encoding.ASCII.GetBytes("a");
-                    Print("Return String from server is :"+returnString+"\n");
-                    while(!(returnString.Substring(returnString.Length - 1, 1).Equals("^")))
+                    Print("Got a String from server!:");
+                    while (!(returnString.Substring(returnString.Length - 1, 1).Equals("^")))
                     {
                         // Receive the TcpServer.response.
                         // Buffer to store the response bytes.
@@ -113,21 +141,25 @@ namespace DoomCloneV2
                         returnString += responseData;
                     }
                     Print(String.Format("Got the following input from Server: {0}",returnString));
-                    Debug.Write("{0} : Finsihed Reading\n", client_Name);
                     Globals.flags[5] = true;
                     Globals.Message = returnString;
+                    this.data = returnString;
+                    locker = false;
                     return returnString;
 
                 }
                 catch (ConnectionError e)
                 {
+                    locker = false;
                     Debug.Write(e.Message);
                 }
                 catch (Exception e)
                 {
+                    locker = false;
                     Debug.WriteLine("Unhandled Exception Error: "+e.Message);
                 }
             }
+            locker = false;
             return String.Empty;
             
 

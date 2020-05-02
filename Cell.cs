@@ -13,6 +13,7 @@ namespace DoomCloneV2
         Color drawColor;
         Color floorColor;
         Color roofColor;
+        bool playerOnCell = false;
         bool mat = false;
         bool isUnitOnCell = false;
         Unit unitOnCell = null;
@@ -22,6 +23,15 @@ namespace DoomCloneV2
             this.drawColor = drawColor;
             this.floorColor = floorColor;
             this.roofColor = roofColor;
+        }
+        public void SetPlayerOnCell()
+        {
+            this.playerOnCell = true;
+        }
+        public void RemoveUnit()
+        {
+            this.isUnitOnCell = false;
+            this.unitOnCell = null;
         }
         public Unit createUnit(Bitmap unitPic, Bitmap unitPicDead)
         {
@@ -33,6 +43,10 @@ namespace DoomCloneV2
         public bool GetisUnitPresent()
         {
             return this.isUnitOnCell;
+        }
+        public bool GetIsPlayerPresent()
+        {
+            return this.playerOnCell;
         }
         public Unit GetUnitOnCell()
         {
@@ -139,7 +153,7 @@ namespace DoomCloneV2
                     }
                     else
                     {
-                        if (isUnitOnCell)
+                        if ((isUnitOnCell) && unitOnCell!=null)
                         {
                             unitOnCell.Draw(g, drawLength, drawHeight, topLeft);
                         }

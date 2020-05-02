@@ -8,6 +8,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,19 +23,26 @@ namespace DoomCloneV2
     /// </summary>
     public partial class Form1 : Form
     {
+        int playerID = 0;
         Cell[,] cellList = new Cell[Globals.cellSize, Globals.cellSize];
         Player thisPlayer = new Player(4,4,1);
+        List<Player> players = new List<Player>();
         Directions switcher;
         System.Timers.Timer aTimer;
-        Server server = null;
+        bool server = false;
         Client thisClient = null;
         List<Unit> units = new List<Unit>();
+        List<Unit> playerUnits = new List<Unit>();
+        String commandString = String.Empty;
         /// <summary>
         /// This constructor creates a Form. Parameters should be specified in <see cref="Globals"/>
         /// </summary>
         public Form1()
         {
             ReadConfig();
+            playerUnits.Add(null);
+            players.Add(thisPlayer);
+            thisPlayer = players[0];
             //this.SetStyle(ControlStyles.OptimizedDoubleBuffer,true);
             //this.SetStyle(ControlStyles.AllPaintingInWmPaint, true);
             //this.SetStyle(ControlStyles.UserPaint, true);
@@ -90,6 +98,10 @@ namespace DoomCloneV2
             PrintMap();
             InitializeComponent();
         }
+        private void AddToCommandString(String s)
+        {
+            this.commandString += s + "^";
+        }
         public static void ReadConfig()
         {
             try
@@ -106,8 +118,11 @@ namespace DoomCloneV2
                 configXml.InnerXml = configFileContents;
                 Debug.WriteLine("Port is :"+configXml.SelectSingleNode("Config/Port").InnerText);
                 Debug.WriteLine("Address is :" + configXml.SelectSingleNode("Config/ServerAddress").InnerText);
+                Debug.WriteLine("Address is :" + configXml.SelectSingleNode("Config/ClientName").InnerText);
                 Globals.port = configXml.SelectSingleNode("Config/Port").InnerText;
                 Globals.Address = configXml.SelectSingleNode("Config/ServerAddress").InnerText;
+                Globals.clientName= configXml.SelectSingleNode("Config/ClientName").InnerText;
+
 
             }
             catch(Exception e)
@@ -161,8 +176,204 @@ namespace DoomCloneV2
         /// respective drawing functions in order
         /// </summary>
         /// <param name="unitsa">Whether to draw non-cell specfic items (Such as units or player views)</param>
-        private void FormUpdate(bool unitsa = false)
+        private void RunCommands()
         {
+
+            String h = commandString;
+            if (!Globals.SinglePlayer && thisClient != null)
+            {
+                //h = String.Empty;
+                lock (thisClient)
+                {
+                    h += thisClient.GetCommands();
+                }
+            }
+            
+            if (h != String.Empty)
+            {
+                String[] commands = h.Split('^');
+                for (int i = 0; i < commands.Length; i++)
+                {
+                    Debug.Write(" Command:'" + commands[i] + "'");
+                }
+                    for (int i = 0; i < commands.Length; i++)
+                {
+                    if (commands[i] != String.Empty)
+                    {
+                        Debug.WriteLine("Reading Command '"+ commands[i]+"'");
+                        switch (commands[i].Substring(0, 1))
+                        {
+                            //Move
+                            case "M":
+                                int x = Int32.Parse(commands[i].Substring(2, 1));
+                                int oldx = players[x].GetX();
+                                int oldy = players[x].Gety();
+                                Debug.WriteLine(" Moving Player " + x +String.Format(" From {0},{0} ", oldx,oldy ));
+                                if (x > -1)
+                                {
+                                    if (commands[i].Substring(1, 1) == "F")
+                                    {
+                                        Move("Forward", players[x]);
+                                    }
+                                    if (commands[i].Substring(1, 1) == "B")
+                                    {
+                                        Move("Back", players[x]);
+                                    }
+                                    if (commands[i].Substring(1, 1) == "L")
+                                    {
+                                        Move("Left", players[x]);
+                                    }
+                                    if (commands[i].Substring(1, 1) == "R")
+                                    {
+                                        Move("Right", players[x]);
+                                    }
+                                    Debug.WriteLine(String.Format("To  {0},{1}.", players[x].GetX(), players[x].Gety()));
+
+                                    if (x != playerID)
+                                    {
+
+                                        Debug.WriteLine("Removing player on " + oldx + "," + oldy + ", setting new player on" + players[x].GetX() + "," + players[x].Gety()) ;
+                                        cellList[oldx, oldy].RemoveUnit();
+                                        playerUnits[x] = (cellList[players[x].GetX(), players[x].Gety()].createUnit(new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
+                                        cellList[players[x].GetX(), players[x].Gety()].SetPlayerOnCell();
+                                        if (cellList[oldx, oldy].GetisUnitPresent())
+                                        {
+                                            Debug.WriteLine("There IS a unit on the old coords "+oldx+","+oldy);
+                                        }
+                                        if (cellList[players[x].GetX(), players[x].Gety()].GetisUnitPresent())
+                                        {
+                                            Debug.WriteLine("There IS a unit on the new coords " + oldx + "," + oldy);
+                                        }
+                                    }
+                                }
+                                
+                                break;
+                                
+                            //Print
+                            case "P":
+                                Debug.Write("Printing ");
+                                if (commands[i].Length > 1)
+                                {
+                                    Globals.flags[5] = true;
+                                    Globals.Message = commands[i].Substring(1, commands[i].Length - 1);
+                                    Debug.Write(commands[i].Substring(1, commands[i].Length - 1));
+                                }
+                                break;
+                                //Connect
+                            case "C":
+
+                                Debug.WriteLine("Connecting ");
+                                if (commands[i].Substring(1, 1) == "O")
+                                {
+                                    //Conection Request Happens Before Set Client ID
+                                    if (commands[i].Substring(2, 1) == "C")
+                                    {
+                                        
+                                        if (server)
+                                        {
+                                            Thread.Sleep(2000);
+                                            Debug.WriteLine("Performing ServerClient Connection Request by making new player");
+                                            players.Add(new Player(5+players.Count, 5 + players.Count, 1));
+                                            playerUnits.Add(cellList[5 + players.Count-1, 5 + players.Count-1].createUnit(new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
+                                            Debug.WriteLine("ServerClient: Messaging out New Players. There are "+players.Count+" players");
+                                            thisClient.Write("DEL");
+                                            for(int f = 0; f < players.Count; f++)
+                                            {
+
+                                                int playerID = f;
+                                                int playerx = players[playerID].GetX();
+                                                int playery = players[playerID].Gety();
+                                                Debug.WriteLine(this.thisClient.GetName() + ": Created new player @ " + playerx + "," + playery + " via serverClient");
+                                                thisClient.Write("S" + playerID + String.Format("{0:000}", playerx) + String.Format("{0:000}", playery));
+
+                                            }
+                                        }
+                                    }
+                                    //Set This Client ID
+                                    else
+                                    {
+                                        Debug.WriteLine(thisClient.GetName() + ":ClientID is " + thisClient.GetID());
+                                        Debug.WriteLine(thisClient.GetName() + ":Setting Client ID to  " + commands[i].Substring(2, 2));
+                                        if (thisClient.GetID() == -1)
+                                        {
+                                            thisClient.SetID(Int32.Parse(commands[i].Substring(2, 2)));
+                                            this.playerID = Int32.Parse(commands[i].Substring(2, 2));
+                                        }
+                                        else
+                                        {
+                                            Globals.flags[6] = true;
+                                            Globals.ServerMessage = "ID already set";
+                                            Debug.WriteLine(thisClient.GetName() + ":ID already set to" + thisClient.GetID());
+                                        }
+                                        //Done in client
+                                    }
+
+                                }
+                                else
+                                {
+                                    Debug.WriteLine(thisClient.GetName() + "Didn't have 'O' as second letter");
+                                }
+                                break;
+                            //Set Player
+                            case "S":
+                                if (!Globals.SinglePlayer && !server)
+                                {
+                                    int playerID1 = Int32.Parse(commands[i].Substring(1, 1));
+                                    int playerx1 = Int32.Parse(commands[i].Substring(2, 3));
+                                    int playery1 = Int32.Parse(commands[i].Substring(5, 3));
+                                    Globals.Message = "Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count;
+
+                                    if (this.players.Count == playerID1)
+                                    {
+                                        this.players.Add(new Player(playerx1, playery1, 1));
+                                        if(playerID!=-1 && playerID != playerID1)
+                                        {
+                                            Globals.flags[5] = true;
+                                            playerUnits.Add(cellList[playerx1, playery1].createUnit(new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
+                                            cellList[playerx1, playery1].SetPlayerOnCell();
+                                            Debug.WriteLine(this.thisClient.GetName() + ": Created new player @ " + playerx1 + "," + playery1);
+                                        }
+                                    }
+                                    if (playerID != -1 && playerID == playerID1)
+                                    {
+                                        playerUnits.Add(null);
+                                        this.thisPlayer = this.players[playerID];
+                                    }
+                                }
+                                break;
+                            case "D":
+                                if (!server)
+                                {
+
+                                    if (commands[i].Substring(1, 2).Equals("EL"))
+                                    {
+                                        this.players.Clear();
+                                    }
+                                }
+                                break;
+                            default:
+                                Debug.WriteLine("Invalid command: '" + commands[i].Substring(0, 1) + "'");
+                                break;
+                        }
+                    }
+                    
+                }
+            }
+            commandString = String.Empty;
+        }
+            /// <summary>
+            /// FormUpdate is used to perform the graphical calcualtiosn for where various objects will appear on the screen, and call their
+            /// respective drawing functions in order
+            /// </summary>
+            /// <param name="unitsa">Whether to draw non-cell specfic items (Such as units or player views)</param>
+            private void FormUpdate(bool unitsa = false)
+            {
+            if (this.thisClient != null)
+            {
+
+                this.playerID = thisClient.GetID();
+            }
+            RunCommands();
             //this.Update();
             Bitmap n = new Bitmap(this.Width, this.Height);
             Graphics g = Graphics.FromImage(n);
@@ -291,30 +502,39 @@ namespace DoomCloneV2
             }
             else
             {
-                if (Globals.flags[0])
+                if (Globals.drawText)
                 {
-                    
-                    g.DrawString("DrawingMap! ", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, this.Height / 2);
-                    g.DrawString("Your direction is : " + thisPlayer.dir, new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 20);
-                    g.DrawString("Your MaxDepth is : " + maxDepth, new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
+                    if (Globals.flags[0])
+                    {
+
+                        g.DrawString("DrawingMap! ", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, this.Height / 2);
+                        g.DrawString("Your direction is : " + thisPlayer.dir, new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 20);
+                        g.DrawString("Your MaxDepth is : " + maxDepth, new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
 
 
+                    }
+                    if (Globals.flags[3])
+                    {
+                        g.DrawString("Server Started!", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
+
+                    }
+                    if (Globals.flags[4])
+                    {
+                        g.DrawString("Client Started!", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
+
+                    }
+                    if (Globals.flags[5])
+                    {
+                        g.DrawString("Messaged Received At Client: " + Globals.Message, new Font("Arial", 16), new SolidBrush(Color.Red), 0, (this.Height / 2) + 60);
+
+                    }
+                    if (Globals.flags[6])
+                    {
+                        g.DrawString("Messaged Received At Server: " + Globals.ServerMessage, new Font("Arial", 10), new SolidBrush(Color.Blue), 0, (this.Height / 2) + 80);
+
+                    }
                 }
-                if (Globals.flags[3])
-                {
-                    g.DrawString("Server Started!", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
-
-                }
-                if (Globals.flags[4])
-                {
-                    g.DrawString("Client Started!", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
-
-                }
-                if (Globals.flags[5])
-                {
-                    g.DrawString("Messaged Received From Client: "+Globals.Message, new Font("Arial", 16), new SolidBrush(Color.Red),0, (this.Height / 2) + 60);
-
-                }
+               
                 //DrawGunShooting
                 if (Globals.flags[1] == true)
                 {
@@ -386,21 +606,99 @@ namespace DoomCloneV2
                     return picker;
                 }
         }
+
+        public void Move(string direction,Player p)
+        {
+            Debug.WriteLine("Move command issued");
+            if (direction == "Forward")
+            {
+                switch (thisPlayer.dir)
+                {
+                    case Directions.UP:
+                        ChangeY(true,p);
+                        break;
+                    case Directions.DOWN:
+                        ChangeY(false, p);
+                        break;
+                    case Directions.LEFT:
+                        ChangeX(false, p);
+                        break;
+                    case Directions.RIGHT:
+                        ChangeX(true, p);
+                        break;
+                }
+            }
+            if (direction.Equals("Left"))
+            {
+                switch (thisPlayer.dir)
+                {
+                    case Directions.UP:
+                        ChangeX(false, p);
+                        break;
+                    case Directions.DOWN:
+                        ChangeX(true, p);
+                        break;
+                    case Directions.LEFT:
+                        ChangeY(false, p);
+                        break;
+                    case Directions.RIGHT:
+                        ChangeY(true, p);
+                        break;
+                }
+            }
+            if (direction.Equals("Right"))
+            {
+                switch (thisPlayer.dir)
+                {
+                    case Directions.UP:
+                        ChangeX(true, p);
+                        break;
+                    case Directions.DOWN:
+                        ChangeX(false, p);
+                        break;
+                    case Directions.LEFT:
+                        ChangeY(true, p);
+                        break;
+                    case Directions.RIGHT:
+                        ChangeY(false, p);
+                        break;
+                }
+            }
+            if (direction.Equals("Back"))
+            {
+                switch (thisPlayer.dir)
+                {
+                    case Directions.UP:
+                        ChangeY(false, p);
+                        break;
+                    case Directions.DOWN:
+                        ChangeY(true, p);
+                        break;
+                    case Directions.LEFT:
+                        ChangeX(true, p);
+                        break;
+                    case Directions.RIGHT:
+                        ChangeX(false, p);
+                        break;
+                }
+            }
+
+        }
         /// <summary>
         /// ChangeX trys to change the player's x co-ordinate. This method deals with invalid movement
         /// </summary>
         /// <param name="right">States whether to move the palyer right. If false, palyer will mvoe left</param>
-        private void ChangeX(bool right)
+        private void ChangeX(bool right,Player p)
         {
-            int x = thisPlayer.GetX();
-            int y = thisPlayer.Gety();
+            int x = p.GetX();
+            int y = p.Gety();
             if (right)
             {
                 if (x < cellList.GetLength(1) - 1)
                 {
-                    if (!cellList[x + 1, y].GetMat())
+                    if (!cellList[x + 1, y].GetMat() && !cellList[x + 1, y].GetisUnitPresent())
                     {
-                        this.thisPlayer.SetX(this.thisPlayer.GetX() + 1);
+                        p.SetX(p.GetX() + 1);
                     }
                 }
             }
@@ -408,9 +706,9 @@ namespace DoomCloneV2
             {
                 if (x > 1)
                 {
-                    if (!cellList[x - 1, y].GetMat())
+                    if (!cellList[x - 1, y].GetMat() && !cellList[x - 1, y].GetisUnitPresent())
                     {
-                        this.thisPlayer.SetX(this.thisPlayer.GetX() - 1);
+                        p.SetX(p.GetX() - 1);
                     }
                 }
             }
@@ -419,30 +717,30 @@ namespace DoomCloneV2
         /// ChangeY trys to change the player's y co-ordinate. This method deals with invalid movement
         /// </summary>
         /// <param name="up">States whether to move the palyer up. If false, player will move down</param>
-        private void ChangeY (bool up)
+        private void ChangeY(bool up,Player p)
         {
-            int x = thisPlayer.GetX();
-            int y = thisPlayer.Gety();
+            int x = p.GetX();
+            int y = p.Gety();
             if (up)
             {
                 if (y > 1)
                 {
-                    if (!cellList[x, y - 1].GetMat())
+                    if (!cellList[x, y - 1].GetMat() && !cellList[x, y - 1].GetisUnitPresent())
                     {
 
-                        this.thisPlayer.SetY(this.thisPlayer.Gety() - 1);
+                        p.SetY(p.Gety() - 1);
                     }
                 }
-                
+
             }
             else
             {
                 if (y < cellList.GetLength(1) - 1)
                 {
-                    if (!cellList[x, y + 1].GetMat())
+                    if (!cellList[x, y + 1].GetMat() && !cellList[x, y + 1].GetisUnitPresent())
                     {
 
-                        this.thisPlayer.SetY(this.thisPlayer.Gety() + 1);
+                        p.SetY(p.Gety() + 1);
                     }
                 }
             }
@@ -454,149 +752,160 @@ namespace DoomCloneV2
         /// <param name="e">The arguments of this particular key press</param>
         private void OnKeyUp(object sender, KeyEventArgs e)
         {
+            bool servermade = false;
             Directions playersdir = thisPlayer.dir;
-            if (e.KeyCode == Keys.Space || e.KeyCode==Keys.D1)
+            Thread f = null;
+            switch (e.KeyCode)
             {
-                this.Text = "DOOMCLoneV2";
-                Globals.drawLines = !Globals.drawLines;
-                
-                
+                case Keys.Space :
+
+                    this.Text = "DOOMCLoneV2Lines";
+                    Globals.drawLines = !Globals.drawLines;
+                    break;
+                case Keys.D1:
+                    this.Text = "DOOMCLoneV2Lines";
+                    Globals.drawLines = !Globals.drawLines;
+                    break;
+                case Keys.D2:
+                    this.Text = "DOOMCLoneV2Color";
+                    Globals.drawFill = !Globals.drawFill;
+                    break;
+                case Keys.D3:
+                    this.Text = "DOOMCLoneV2Gun";
+                    Globals.drawGun = !Globals.drawGun;
+                    break;
+                case Keys.D4:
+                    this.Text = "DoomClone ";
+                    Globals.drawText = !Globals.drawText;
+                    break;
+                case Keys.S:
+                    if (Globals.SinglePlayer)
+                    {
+                        AddToCommandString("MB0");
+                    }
+                    else
+                    {
+                        this.thisClient.Write("MB"+thisClient.GetID());
+                    }
+                    break;
+                case Keys.W:
+                    if (Globals.SinglePlayer)
+                    {
+                        AddToCommandString("MF0");
+                    }
+                    else
+                    {
+                        this.thisClient.Write("MF" + thisClient.GetID());
+                    }
+                    break;
+                case Keys.D:
+                    if (Globals.SinglePlayer)
+                    {
+                        AddToCommandString("MR0");
+                    }
+                    else
+                    {
+                        this.thisClient.Write("MR" + thisClient.GetID());
+                    }
+                    break;
+                case Keys.A:
+                    if (Globals.SinglePlayer)
+                    {
+                        AddToCommandString("ML0");
+                    }
+                    else
+                    {
+                        this.thisClient.Write("ML" + thisClient.GetID());
+                    }
+                    break;
+                case Keys.Q:
+                    this.thisPlayer.RefreshGun();
+                    RefreshPlayerView(this.thisPlayer.playerView);
+                    break;
+                case Keys.U:
+                    Globals.flags[0] = !Globals.flags[0];
+                    for (int i = 3; i < Globals.flags.Length; i++)
+                    {
+                        Globals.flags[i] = false;
+                    }
+                    PrintMap();
+                    break;
+                //Server
+                case Keys.O:
+                    if (this.server == false)
+                    {
+                        this.server = true;
+                        Globals.SinglePlayer = false;
+                        f = new Thread(ThreadFunctions.ThreadRunnerServer);
+                        f.Start();
+                        Globals.flags[0] = false;
+                        for (int i = 3; i < Globals.flags.Length; i++)
+                        {
+                            Globals.flags[i] = false;
+                        }
+                        Globals.flags[3] = true;
+                        servermade = true;
+                    }
+                    break;
+                case Keys.P:
+                    Globals.SinglePlayer = false;
+                    if (thisClient == null)
+                    {
+                        Globals.flags[0] = false;
+                        for (int i = 3; i < Globals.flags.Length; i++)
+                        {
+                            Globals.flags[i] = false;
+                        }
+                        Globals.flags[4] = true;
+                        f = new Thread(ThreadFunctions.ClientThread);
+                        object args1;
+                        this.thisClient = new Client(Globals.port, Globals.Address, "The Client");
+                        args1 = this.thisClient;
+                        f.Start(args1);
+                    }
+                    break;
+                case Keys.L:
+                    Globals.SinglePlayer = false;
+                    
+                        f = new Thread(ThreadFunctions.ClientThread);
+                        object args;
+                        Client cl = new Client(Globals.port, Globals.Address, "The Client2",1);
+                        args = cl;
+                        f.Start(args);
+                    break;
+                case Keys.K:
+                    if (Globals.SinglePlayer)
+                    {
+                        AddToCommandString("P" + "Hey There From This Client at " + DateTime.Now);
+                    }
+                    else
+                    {
+                        this.thisClient.Write("P" + "Hey There From This Client at " + DateTime.Now);
+                    }
+                    break;
+                case Keys.V:
+                    if (!Globals.SinglePlayer)
+                    {
+                        this.thisClient.Write("ML1");
+                    }
+                    break;
             }
-            if (e.KeyCode == Keys.D2)
+            if (servermade == true)
             {
-                this.Text = "DOOMCLoneV2";
-                Globals.drawFill = !Globals.drawFill;
-
-
-            }
-            if (e.KeyCode == Keys.D3)
-            {
-                this.Text = "DOOMCLoneV2";
-                Globals.drawGun = !Globals.drawGun;
-
-
-            }
-            if (e.KeyCode == Keys.S)
-            {
-                switch (playersdir)
+                if (thisClient == null)
                 {
-                    case Directions.UP:
-                        ChangeY(false);
-                        break;
-                    case Directions.DOWN:
-                        ChangeY(true);
-                        break;
-                    case Directions.LEFT:
-                        ChangeX(true);
-                        break;
-                    case Directions.RIGHT:
-                        ChangeX(false);
-                        break;
+                    Globals.flags[0] = false;
+                    for (int i = 3; i < Globals.flags.Length; i++)
+                    {
+                        Globals.flags[i] = false;
+                    }
+                    Globals.flags[4] = true;
+                    f = new Thread(ThreadFunctions.ClientThread);
+                    object args;
+                    this.thisClient = new Client(Globals.port, Globals.Address, "The Client");
+                    args = this.thisClient;
+                    f.Start(args);
                 }
-
-
-            }
-            if (e.KeyCode == Keys.W)
-            {
-                switch (playersdir)
-                {
-                    case Directions.UP:
-                        ChangeY(true);
-                        break;
-                    case Directions.DOWN:
-                        ChangeY(false);
-                        break;
-                    case Directions.LEFT:
-                        ChangeX(false);
-                        break;
-                    case Directions.RIGHT:
-                        ChangeX(true);
-                        break;
-                }
-
-
-            }
-            if (e.KeyCode == Keys.D)
-            {
-                switch (playersdir)
-                {
-                    case Directions.UP:
-                        ChangeX(true);
-                        break;
-                    case Directions.DOWN:
-                        ChangeX(false);
-                        break;
-                    case Directions.LEFT:
-                        ChangeY(true);
-                        break;
-                    case Directions.RIGHT:
-                        ChangeY(false);
-                        break;
-                }
-
-            }
-            if (e.KeyCode == Keys.A)
-            {
-                switch (playersdir)
-                {
-                    case Directions.UP:
-                        ChangeX(false);
-                        break;
-                    case Directions.DOWN:
-                        ChangeX(true);
-                        break;
-                    case Directions.LEFT:
-                        ChangeY(false);
-                        break;
-                    case Directions.RIGHT:
-                        ChangeY(true);
-                        break;
-                }
-
-            }
-            if (e.KeyCode == Keys.Q)
-            {
-                this.thisPlayer.RefreshGun();
-                RefreshPlayerView(this.thisPlayer.playerView);
-
-            }
-            if (e.KeyCode == Keys.U)
-            {
-                Globals.flags[0] = !Globals.flags[0];
-                Globals.flags[3] = false;
-                Globals.flags[4] = false;
-                PrintMap();
-
-            }
-            if (e.KeyCode == Keys.O)
-            {
-                Thread f = new Thread(ThreadFunctions.ThreadRunnerServer);
-                f.Start();
-                Globals.flags[0] = false;
-                Globals.flags[3] = true;
-                Globals.flags[4] = false;
-
-            }
-            if (e.KeyCode == Keys.P)
-            {
-                Globals.flags[0] = false;
-                Globals.flags[3] = false;
-                Globals.flags[4] = true;
-                Thread f = new Thread(ThreadFunctions.ClientThread);
-                object args;
-                this.thisClient = new Client(Globals.port, Globals.Address,"The Client");
-                args = this.thisClient;
-                f.Start(args);
-            }
-            if (e.KeyCode == Keys.L)
-            {
-                Client c = new Client(Globals.port, "localhost", "New Client Thread");
-                Thread f = new Thread(ThreadFunctions.Write);
-                f.Start(c);
-            }
-            if (e.KeyCode == Keys.K)
-            {
-                thisClient.Write("Hey There From This Client at "+DateTime.Now);
             }
             this.Update();
             this.Invalidate();

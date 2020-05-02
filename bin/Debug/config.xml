@@ -1,4 +1,5 @@
 <Config>
 <Port>8006</Port>
-<ServerAddress>192.168.200.40</ServerAddress>
+<ServerAddress>192.168.200.40</ServerAddress><!--192.168.200.40--><!--Jos's192.168.200.48-->
+  <ClientName>Starshiplad</ClientName>
 </Config>

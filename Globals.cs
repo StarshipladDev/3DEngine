@@ -16,19 +16,25 @@ namespace DoomCloneV2
      */
     public static class Globals
     {
+
+        
+        public static bool SinglePlayer = true;
         public static bool drawGun = true;
         public static bool drawLines = true;
         public static bool drawFill = true;
+        public static bool drawText = false;
         public static bool drawn = true;
         public const int maxView = 20;
         public const int cellSize = 20;
-        //Draw directin /Drew gun //Turn gun back
-        public static bool[] flags = new bool[6];
+        //Draw directin /Drew gun //Turn gun back //draw client confirm //draw server confirm //Draw message //Draw Server receive
+        public static bool[] flags = new bool[7];
         public static int[] animations = new int[5];
         public static bool readyToDraw = true;
         public static string Message = String.Empty;
+        public static string ServerMessage = String.Empty;
         public static string port = "8004";
         public static string Address = "localhost";
+        public static string clientName = "This Client";
         public const int MAXFRAMES = 8;
         public const int INTERVALTIMEMILISECONDS = 1000 / 2;
         public const int MaxPossibleDepth = 20;

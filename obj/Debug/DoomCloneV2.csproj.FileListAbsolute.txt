@@ -21,3 +21,4 @@ C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\obj\Debug\DoomCloneV2.pdb
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\bin\Debug\Resources\Images\Enemy\Devil\Devil_Death.png
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\obj\Debug\DoomCloneV2.Form1.resources
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\bin\Debug\config.xml
+C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\bin\Debug\Resources\Images\Friendly\Player1\Player1_Idle.png
