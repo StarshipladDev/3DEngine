@@ -49,6 +49,7 @@
     <Compile Include="Cell.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Command.cs" />
+    <Compile Include="CursorObject.cs" />
     <Compile Include="Globals.cs" />
     <Compile Include="Gun.cs" />
     <Compile Include="Player.cs" />
@@ -142,6 +143,9 @@
     <Content Include="Resources\Images\Gun Parts\Sight\Sight_000_000_Boring.png" />
     <Content Include="Resources\Images\Gun Parts\Sight\Sight_000_001_Matrix.png" />
     <Content Include="Resources\Images\Gun Parts\Sight\Sight_000_001_RedDot.png" />
+    <Content Include="Resources\Images\Utility\Crosshair.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\Sound\Bang_001_001.wav">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

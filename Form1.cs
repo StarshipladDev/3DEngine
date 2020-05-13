@@ -26,10 +26,13 @@ namespace DoomCloneV2
         int playerID = 0;
         Cell[,] cellList = new Cell[Globals.cellSize, Globals.cellSize];
         Player thisPlayer = new Player(4,4,1);
+        CursorObject cursor = null;
         List<Player> players = new List<Player>();
         Directions switcher;
         System.Timers.Timer aTimer;
+        int shotsFired=0;
         bool server = false;
+        bool cursorUp = false;
         Client thisClient = null;
         List<Unit> units = new List<Unit>();
         List<Unit> playerUnits = new List<Unit>();
@@ -374,6 +377,11 @@ namespace DoomCloneV2
                 this.playerID = thisClient.GetID();
             }
             RunCommands();
+            if (cursorUp)
+            {
+                //this.cursor.DebugPrint();
+                this.cursor.MoveCursor();
+            }
             //this.Update();
             Bitmap n = new Bitmap(this.Width, this.Height);
             Graphics g = Graphics.FromImage(n);
@@ -548,9 +556,15 @@ namespace DoomCloneV2
                     RefreshPlayerView(this.thisPlayer.GetPlayerGun());
                     Globals.flags[2] = false;
                 }
+
                 if (Globals.drawGun)
                 {
                     g.DrawImage(thisPlayer.playerView, new Point(this.Width - thisPlayer.playerView.Width - 10, this.Height - thisPlayer.playerView.Height - 40));
+                }
+                
+                if (cursorUp)
+                {
+                    this.cursor.Draw(g);
                 }
                 g.Dispose();
                 Graphics z = this.CreateGraphics();
@@ -943,16 +957,51 @@ namespace DoomCloneV2
             }
         }
         /// <summary>
+        /// CursorHandler is what happens if a click occurs while the cursor is up
+        /// </summary>
+        private void CursorHandler()
+        {
+
+            //Set gun as true and redraw
+            Globals.flags[1] = true;
+            thisPlayer.GetPlayerGunSound().Play();
+            int x = cursor.GetCoords()[0];
+            int y = cursor.GetCoords()[1];
+            for (int i = 0; i < units.Count; i++)
+            {
+                Unit unitClicked = units[i];
+                if (x > unitClicked.topLeft.X && x < unitClicked.bottomRight.X)
+                {
+                    if (y < unitClicked.bottomRight.Y && y > unitClicked.topLeft.Y)
+                    {
+                        if (unitClicked.alive == true)
+                        {
+                            unitClicked.DealDamage(thisPlayer.GetGunDamage());
+                        }
+                    }
+                }
+            }
+            if (shotsFired == 3)
+            {
+
+                cursorUp = false;
+                shotsFired = 0;
+                this.cursor = null;
+            }
+            else
+            {
+                shotsFired++;
+            }
+        }
+                
+        /// <summary>
         /// Handles the logic of a unit being clicked
         /// </summary>
         /// <param name="unitClicked"></param>
-        private void ClickHandler(Unit unitClicked)
+        private void ClickHandler(Unit unitClicked,int x,int y)
         {
-            
-            if (unitClicked.alive == true)
-            {
-                unitClicked.DealDamage(thisPlayer.GetGunDamage());
-            }
+            cursorUp = true;
+            this.cursor = new CursorObject(new Bitmap("Resources/Images/Utility/Crosshair.png"),x,y, this.Height/5,50);
             this.Invalidate();
         }
         /// <summary>
@@ -968,7 +1017,7 @@ namespace DoomCloneV2
             {
                 if (y < unitClicked.bottomRight.Y && y > unitClicked.topLeft.Y)
                 {
-                    ClickHandler(unitClicked);
+                    ClickHandler(unitClicked,x,y);
 
                     return 1;
                 }
@@ -982,14 +1031,18 @@ namespace DoomCloneV2
         /// <param name="e">The arguments of that particular MouseClick</param>
         private void MouseClicker(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            //Set gun as true and redraw
-            Globals.flags[1] = true;
-            thisPlayer.GetPlayerGunSound().Play();
-            for (int i=0; i < units.Count; i++)
+            if (cursorUp)
             {
-                if (ClickedOn(units[i], e.X, e.Y) == 1)
+                CursorHandler();
+            }
+            else
+            {
+                for (int i = 0; i < units.Count; i++)
                 {
-                    i = units.Count;
+                    if (ClickedOn(units[i], e.X, e.Y) == 1)
+                    {
+                        i = units.Count;
+                    }
                 }
             }
         }

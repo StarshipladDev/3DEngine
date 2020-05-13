@@ -5,3 +5,4 @@ bin/Release/*
 Changes.txt
 obj
 obj/*
+.vs
