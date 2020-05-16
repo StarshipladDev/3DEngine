@@ -20,10 +20,11 @@ namespace DoomCloneV2
         
         public static bool SinglePlayer = true;
         public static bool drawGun = true;
-        public static bool drawLines = true;
+        public static bool drawLines = false;
         public static bool drawFill = true;
-        public static bool drawText = false;
+        public static bool drawText = true;
         public static bool drawn = true;
+        public static bool pauseForInfo = false;
         public const int maxView = 20;
         public const int cellSize = 20;
         //Draw directin /Drew gun //Turn gun back //draw client confirm //draw server confirm //Draw message //Draw Server receive
@@ -36,7 +37,7 @@ namespace DoomCloneV2
         public static string Address = "localhost";
         public static string clientName = "This Client";
         public const int MAXFRAMES = 8;
-        public const int INTERVALTIMEMILISECONDS = 1000 / 2;
+        public const int INTERVALTIMEMILISECONDS = 1000 / 5;
         public const int MaxPossibleDepth = 20;
 
         /// <summary>

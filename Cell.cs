@@ -16,13 +16,22 @@ namespace DoomCloneV2
         bool playerOnCell = false;
         bool mat = false;
         bool isUnitOnCell = false;
+        int type = 0;
         Unit unitOnCell = null;
         public Cell(bool mat, Color drawColor, Color floorColor, Color roofColor)
         {
             this.mat = mat;
+            if (mat)
+            {
+                this.type = 1;
+            }
             this.drawColor = drawColor;
             this.floorColor = floorColor;
             this.roofColor = roofColor;
+        }
+        public int GetCellType()
+        {
+            return type;
         }
         public void SetPlayerOnCell()
         {
@@ -33,11 +42,12 @@ namespace DoomCloneV2
             this.isUnitOnCell = false;
             this.unitOnCell = null;
         }
-        public Unit createUnit(Bitmap unitPic, Bitmap unitPicDead)
+        public Unit createUnit(int x, int y,Bitmap unitPic, Bitmap unitPicDead)
         {
             this.isUnitOnCell = true;
             this.unitOnCell = new Unit();
-            this.unitOnCell.setUpUnit(unitPic, unitPicDead);
+
+            this.unitOnCell.setUpUnit(x,y,unitPic, unitPicDead);
             return this.unitOnCell;
         }
         public bool GetisUnitPresent()
@@ -66,6 +76,15 @@ namespace DoomCloneV2
         public void setMat(bool mat, Color color)
         {
             this.mat = mat;
+            if (mat == true)
+            {
+
+                this.type = 1;
+            }
+            else
+            {
+                this.type = 0;
+            }
             this.drawColor = color;
         }
 

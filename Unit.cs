@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -21,14 +22,18 @@ namespace DoomCloneV2
         public Point bottomRight = new Point(-1, -1);
         public bool alive = true;
         public bool dying = false;
+        public int x = 0;
+        public int y = 0;
         int offset = 0;
         /// <summary>
         /// setUpUnit is a constructor but like later
         /// </summary>
         /// <param name="unitImage">Provides a bitmap image to be read whenever the unit is 'alive'</param>
         /// <param name="deadUnitImage">Provides a bitmap image to be read/drawn wheenever the unit is 'dead'</param>
-        public void setUpUnit(Bitmap unitImage, Bitmap deadUnitImage)
+        public void setUpUnit(int x, int y,Bitmap unitImage, Bitmap deadUnitImage)
         {
+            this.x = x;
+            this.y = y;
             this.unitImage = unitImage;
             this.deadUnitImage = deadUnitImage;
             this.returnImage = this.unitImage;
@@ -55,6 +60,7 @@ namespace DoomCloneV2
         /// </summary>
         public void DealDamage(int damage)
         {
+            Debug.WriteLine(damage + " damage dealt to unit");
             this.health -= damage;
             if (this.health <= 0)
             {

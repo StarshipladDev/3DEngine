@@ -1,4 +1,6 @@
-﻿namespace DoomCloneV2
+﻿using System.Drawing;
+
+namespace DoomCloneV2
 {
     partial class Form1
     {
@@ -28,7 +30,13 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.Icon = new Icon("Resources/Images/DoomClone.ico");
             this.SuspendLayout();
+            this.SetStyle(
+               System.Windows.Forms.ControlStyles.UserPaint |
+               System.Windows.Forms.ControlStyles.AllPaintingInWmPaint |
+               System.Windows.Forms.ControlStyles.OptimizedDoubleBuffer,
+               true);
             // 
             // Form1
             // 

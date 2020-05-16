@@ -37,6 +37,8 @@ namespace DoomCloneV2
         List<Unit> units = new List<Unit>();
         List<Unit> playerUnits = new List<Unit>();
         String commandString = String.Empty;
+        Color ColorFloor;
+        Color ColorRoof;
         /// <summary>
         /// This constructor creates a Form. Parameters should be specified in <see cref="Globals"/>
         /// </summary>
@@ -59,7 +61,8 @@ namespace DoomCloneV2
             }
             thisPlayer.playerView = Globals.ResizeImage(thisPlayer.playerView, this.Width, this.Height);
             Random rand = new Random();
-            Color ColorRoof = Color.FromArgb(150, 255,200,0);
+            ColorFloor = Color.FromArgb(150, 255,200,0);
+            ColorRoof = Color.FromArgb(50, rand.Next(50), 255, rand.Next(50));
             //Y
             for (int i = 0; i < cellList.GetLength(0); i++)
             {
@@ -73,8 +76,6 @@ namespace DoomCloneV2
                     }
                     else
                     {
-
-                        Color ColorFloor = Color.FromArgb(50, rand.Next(50), 255, rand.Next(50));
                         cellList[i, f] = new Cell(false, Color.FromArgb(0, 0, 0, 0),ColorFloor,ColorRoof);
                     }
                     
@@ -92,7 +93,7 @@ namespace DoomCloneV2
                 {
                     if (! cellList[xForBlock, yForBLock].GetisUnitPresent())
                     {
-                        units.Add(cellList[xForBlock, yForBLock].createUnit(new Bitmap("Resources/Images/Enemy/Devil/Devil_Idle.png"),new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
+                        units.Add(cellList[xForBlock, yForBLock].createUnit(xForBlock, yForBLock, new Bitmap("Resources/Images/Enemy/Devil/Devil_Idle.png"),new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
                     }
                 }
             }
@@ -170,7 +171,7 @@ namespace DoomCloneV2
 
                 Globals.readyToDraw = false;
                 base.OnPaint(e);
-                this.FormUpdate(true);
+                this.FormUpdate(true,e.Graphics);
                 Globals.readyToDraw = true;
             }
         }
@@ -179,6 +180,38 @@ namespace DoomCloneV2
         /// respective drawing functions in order
         /// </summary>
         /// <param name="unitsa">Whether to draw non-cell specfic items (Such as units or player views)</param>
+        /// 
+        ///LIST OF COMMNAD TYPES
+        ///
+        /// ----
+        ///MV -Move
+        ///MVP - Move Player - MVP[00PlayerID][ch(1) Direction]{'F'-Foward,'B'-Back,'L'-Left,'R'-Right}
+        ///
+        /// ----
+        ///DI - Direction
+        ///DIP - Change Player Direction - DIP[00PlayerID][ch(1)]{'L'-Left,'R'-Right}
+        ///
+        /// 
+        ///------
+        ///SH - Deal Damage
+        ///SHE - Shoot Enemy SHE[000 EnemyIndex][00 Palyer ID][0000 Damage]
+        ///SHP - Deal Damage To Player
+        ///
+        /// ------
+        ///SE - Set GameWorld
+        ///SEP - Set Player-SEP[00 PlayerID][000 Player X Position][000 Player Y Position] - Creates Player of set ID at set co-ords
+        ///SEW - Set World Block - SEW([000 BlockType][000 X Pos][000 Y Pos] x GLobals.MaxCell)- Creates Block of type 't' at location 'x','y'
+        ///SEE - Set Enemy - SEE[000 Enemy Type][000 X Pos][000 Y Pos][0000 Deal Damage] - Places enemy and deals damage
+        ///
+        ///-------
+        ///PR- Print
+        ///PRT - Print Text - PRT[MessageString]
+        ///
+        ///--------
+        ///DEL-Delete all Client Players
+        ///DAL- Let CLient Draw AGain
+        ///
+        ///
         private void RunCommands()
         {
 
@@ -188,56 +221,58 @@ namespace DoomCloneV2
                 //h = String.Empty;
                 lock (thisClient)
                 {
-                    h += thisClient.GetCommands();
+                    h = thisClient.GetCommands();
                 }
             }
             
             if (h != String.Empty)
             {
+                Debug.WriteLine("Running commands :" + h);
                 String[] commands = h.Split('^');
                 for (int i = 0; i < commands.Length; i++)
                 {
+
                     Debug.Write(" Command:'" + commands[i] + "'");
-                }
-                    for (int i = 0; i < commands.Length; i++)
-                {
-                    if (commands[i] != String.Empty)
+                    if (commands[i].Length>2)
                     {
-                        Debug.WriteLine("Reading Command '"+ commands[i]+"'");
-                        switch (commands[i].Substring(0, 1))
+                       // Debug.WriteLine("Reading Command '"+ commands[i]+"'");
+
+                        Debug.WriteLine("After trim command is :'" + commands[i].Trim() + "'");
+                        commands[i] = commands[i].Trim();
+                        switch (commands[i].Substring(0, 3))
                         {
-                            //Move
-                            case "M":
-                                int x = Int32.Parse(commands[i].Substring(2, 1));
+                            //
+                            //MOVE PLAYER
+                            //
+                            case "MVP":
+                                int x = Int32.Parse(commands[i].Substring(3, 2));
                                 int oldx = players[x].GetX();
                                 int oldy = players[x].Gety();
                                 Debug.WriteLine(" Moving Player " + x +String.Format(" From {0},{0} ", oldx,oldy ));
-                                if (x > -1)
+                                if (x > -1 && x<players.Count)
                                 {
-                                    if (commands[i].Substring(1, 1) == "F")
+                                    char directionChar= Char.Parse(commands[i].Substring(5, 1));
+                                    switch(directionChar)
                                     {
-                                        Move("Forward", players[x]);
-                                    }
-                                    if (commands[i].Substring(1, 1) == "B")
-                                    {
-                                        Move("Back", players[x]);
-                                    }
-                                    if (commands[i].Substring(1, 1) == "L")
-                                    {
-                                        Move("Left", players[x]);
-                                    }
-                                    if (commands[i].Substring(1, 1) == "R")
-                                    {
-                                        Move("Right", players[x]);
+                                        case 'F':
+                                            Move("Forward", players[x]);
+                                            break;
+                                        case 'B':
+                                            Move("Back", players[x]);
+                                            break;
+                                        case 'L':
+                                            Move("Left", players[x]);
+                                            break;
+                                        case 'R':
+                                            Move("Right", players[x]);
+                                            break;
                                     }
                                     Debug.WriteLine(String.Format("To  {0},{1}.", players[x].GetX(), players[x].Gety()));
-
                                     if (x != playerID)
                                     {
-
                                         Debug.WriteLine("Removing player on " + oldx + "," + oldy + ", setting new player on" + players[x].GetX() + "," + players[x].Gety()) ;
                                         cellList[oldx, oldy].RemoveUnit();
-                                        playerUnits[x] = (cellList[players[x].GetX(), players[x].Gety()].createUnit(new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
+                                        playerUnits[x] = (cellList[players[x].GetX(), players[x].Gety()].createUnit(players[x].GetX(), players[x].Gety(),new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
                                         cellList[players[x].GetX(), players[x].Gety()].SetPlayerOnCell();
                                         if (cellList[oldx, oldy].GetisUnitPresent())
                                         {
@@ -251,9 +286,28 @@ namespace DoomCloneV2
                                 }
                                 
                                 break;
-                                
-                            //Print
-                            case "P":
+
+                            case "DIP":
+                                int id = Int32.Parse(commands[i].Substring(3, 2));
+                                if (id > -1 && id < players.Count)
+                                {
+                                    char directionChar = Char.Parse(commands[i].Substring(5, 1));
+                                    Debug.WriteLine("ROtating Player " + id + " " + directionChar);
+                                    switch (directionChar)
+                                    {
+                                        case 'L':
+                                            players[id].ChangeDirection("Left");
+                                            break;
+                                        case 'R':
+                                            players[id].ChangeDirection("Left");
+                                            break;
+                                    }
+                                }
+                                break;
+                            //
+                            //PRINT VALUE
+                            //
+                            case "PRT":
                                 Debug.Write("Printing ");
                                 if (commands[i].Length > 1)
                                 {
@@ -263,76 +317,144 @@ namespace DoomCloneV2
                                 }
                                 break;
                                 //Connect
-                            case "C":
-
-                                Debug.WriteLine("Connecting ");
-                                if (commands[i].Substring(1, 1) == "O")
+                            case "COC":
+                                //
+                                //NEW PLAYER ADDED - SERVER HANDLING
+                                //
+                                if (server)
                                 {
-                                    //Conection Request Happens Before Set Client ID
-                                    if (commands[i].Substring(2, 1) == "C")
+                                    Thread.Sleep(2000);
+                                    Debug.WriteLine("Performing ServerClient Connection Request by making new player");
+                                    players.Add(new Player(5 + players.Count, 5 + players.Count, 1));
+                                    playerUnits.Add(cellList[5 + players.Count - 1, 5 + players.Count - 1].createUnit(5 + players.Count - 1, 5 + players.Count - 1, new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
+                                    Debug.WriteLine("ServerClient: Messaging out New Players. There are " + players.Count + " players");
+                                    thisClient.Write("DEL");
+                                    ///SEP - Set Player-SEP[00 PlayerID][000 Player X Position][000 Player Y Position] - Creates Player of set ID at set co-ords
+                                    ///SEW - Set World Block - SEW[000 BlockType][000 X Pos][000 Y Pos] - Creates Block of type 't' at location 'x','y'
+                                    ///SEE - Set Enemy - SEE[000 Enemy Type][000 X Pos][000 Y Pos][0000 Deal Damage] - Places enemy and deals damage
+                                   
+                                    for (int f = 0; f < Globals.cellSize; f++)
                                     {
-                                        
-                                        if (server)
+                                        String builder = "SEW";
+                                        for (int z = 0; z < Globals.cellSize; z++)
                                         {
-                                            Thread.Sleep(2000);
-                                            Debug.WriteLine("Performing ServerClient Connection Request by making new player");
-                                            players.Add(new Player(5+players.Count, 5 + players.Count, 1));
-                                            playerUnits.Add(cellList[5 + players.Count-1, 5 + players.Count-1].createUnit(new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
-                                            Debug.WriteLine("ServerClient: Messaging out New Players. There are "+players.Count+" players");
-                                            thisClient.Write("DEL");
-                                            for(int f = 0; f < players.Count; f++)
-                                            {
-
-                                                int playerID = f;
-                                                int playerx = players[playerID].GetX();
-                                                int playery = players[playerID].Gety();
-                                                Debug.WriteLine(this.thisClient.GetName() + ": Created new player @ " + playerx + "," + playery + " via serverClient");
-                                                thisClient.Write("S" + playerID + String.Format("{0:000}", playerx) + String.Format("{0:000}", playery));
-
-                                            }
+                                            builder += String.Format("{0:000}", cellList[f, z].GetCellType()) + String.Format("{0:000}", f) + String.Format("{0:000}", z);
                                         }
+                                        thisClient.Write(builder);
                                     }
-                                    //Set This Client ID
-                                    else
+                                    for (int f = 0; f < units.Count; f++)
                                     {
-                                        Debug.WriteLine(thisClient.GetName() + ":ClientID is " + thisClient.GetID());
-                                        Debug.WriteLine(thisClient.GetName() + ":Setting Client ID to  " + commands[i].Substring(2, 2));
-                                        if (thisClient.GetID() == -1)
+                                        String builder = "SEE";
+                                        builder += "001";
+                                        builder += String.Format("{0:000}", units[f].x);
+                                        builder += String.Format("{0:000}", units[f].y);
+                                        if (units[f].alive)
                                         {
-                                            thisClient.SetID(Int32.Parse(commands[i].Substring(2, 2)));
-                                            this.playerID = Int32.Parse(commands[i].Substring(2, 2));
+                                            builder += String.Format("{0:0000}",0);
                                         }
                                         else
                                         {
-                                            Globals.flags[6] = true;
-                                            Globals.ServerMessage = "ID already set";
-                                            Debug.WriteLine(thisClient.GetName() + ":ID already set to" + thisClient.GetID());
-                                        }
-                                        //Done in client
-                                    }
 
+                                            builder += String.Format("{0:0000}",20);
+                                        }
+                                        thisClient.Write(builder);
+                                    }
+                                    for (int f = 0; f < players.Count; f++)
+                                    {
+
+                                        int playerID = f;
+                                        int playerx = players[playerID].GetX();
+                                        int playery = players[playerID].Gety();
+                                        Debug.WriteLine(this.thisClient.GetName() + ": Created new player @ " + playerx + "," + playery + " via serverClient");
+                                        thisClient.Write("SEP" + String.Format("{0:00}", playerID) + String.Format("{0:000}", playerx) + String.Format("{0:000}", playery));
+
+                                    }
+                                    thisClient.Write("DAL");
+                                }
+                                break;
+                            case "SEW":
+                                if (!server)
+                                {
+                                    for (int z = 0; z < Globals.cellSize; z++)
+                                    {
+                                        // Debug.WriteLine("Command length is "+commands[i].Length);
+                                        // Debug.WriteLine("accessing "+ ((z * 9) + 3)+" that is "+ commands[i].Substring(((z * 9) + 3), 3));
+                                        int cellType = Int32.Parse(commands[i].Substring(((z * 9) + 3), 3));
+                                        //  Debug.WriteLine("accessing " + ((z * 9) + 6) + " that is " + commands[i].Substring(((z * 9) + 6), 3));
+                                        int cellx = Int32.Parse(commands[i].Substring(((z * 9) + 6), 3));
+                                        //  Debug.WriteLine("accessing " + ((z * 9) + 9) + " that is " + commands[i].Substring(((z * 9) + 9), 3));
+                                        int celly = Int32.Parse(commands[i].Substring(((z * 9) + 9), 3));
+                                        cellList[cellx, celly] = new Cell(false, Color.FromArgb(0, 0, 0, 0), ColorFloor, ColorRoof);
+                                        if (cellType == 1)
+                                        {
+                                            cellList[cellx, celly].setMat(true, Color.Black);
+                                        }
+                                    }
+                                }
+                            break;
+                            case "SEE":
+                                if (!server)
+                                {
+                                    int enemyType = Int32.Parse(commands[i].Substring(3, 3));
+                                    int enemyX = Int32.Parse(commands[i].Substring(6, 3));
+                                    int enemyY = Int32.Parse(commands[i].Substring(9, 3));
+                                    int enemyDam = Int32.Parse(commands[i].Substring(12, 4));
+                                    String enemyAlive = "None";
+                                    String enemyDead = "None";
+                                    switch (enemyType)
+                                    {
+                                        case (1):
+                                            enemyAlive = "Resources/Images/Enemy/Devil/Devil_Idle.png";
+                                            enemyDead = "Resources/Images/Enemy/Devil/Devil_Death.png";
+                                            break;
+                                    }
+                                    units.Add(cellList[enemyX, enemyY].createUnit(enemyX, enemyY, new Bitmap(enemyAlive), new Bitmap(enemyDead)));
+                                    units[units.Count - 1].DealDamage(enemyDam);
+                                    Debug.WriteLine("");
+                                }
+                                
+                                break;
+                            case "COP":
+                                Debug.WriteLine(thisClient.GetName() + ":ClientID is " + thisClient.GetID());
+                                Debug.WriteLine(thisClient.GetName() + ":Setting Client ID to  " + commands[i].Substring(3, 2));
+                                if (thisClient.GetID() == -1)
+                                {
+                                    thisClient.SetID(Int32.Parse(commands[i].Substring(3, 2)));
+                                    this.playerID = Int32.Parse(commands[i].Substring(3, 2));
                                 }
                                 else
                                 {
-                                    Debug.WriteLine(thisClient.GetName() + "Didn't have 'O' as second letter");
+                                    Globals.flags[6] = true;
+                                    Globals.ServerMessage = "ID already set";
+                                    Debug.WriteLine(thisClient.GetName() + ":ID already set to" + thisClient.GetID());
                                 }
                                 break;
-                            //Set Player
-                            case "S":
+                                //DealDamageTOEnemy
+                            case "SHE":
+                                int shootingPlayer = Int32.Parse(commands[i].Substring(6, 2));
+                                int enemyIndex = Int32.Parse(commands[i].Substring(3, 3));
+                                int damageDone = Int32.Parse(commands[i].Substring(8, 4));
+                                this.units[enemyIndex].DealDamage(damageDone);
+                                break;
+                            //
+                            //SET UP CLIENT WORLD DETAILS
+                            //
+                            case "SEP":
+
                                 if (!Globals.SinglePlayer && !server)
                                 {
-                                    int playerID1 = Int32.Parse(commands[i].Substring(1, 1));
-                                    int playerx1 = Int32.Parse(commands[i].Substring(2, 3));
-                                    int playery1 = Int32.Parse(commands[i].Substring(5, 3));
+                                    int playerID1 = Int32.Parse(commands[i].Substring(3,2));
+                                    int playerx1 = Int32.Parse(commands[i].Substring(5, 3));
+                                    int playery1 = Int32.Parse(commands[i].Substring(8, 3));
                                     Globals.Message = "Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count;
-
+                                    Debug.WriteLine("Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count);
                                     if (this.players.Count == playerID1)
                                     {
                                         this.players.Add(new Player(playerx1, playery1, 1));
                                         if(playerID!=-1 && playerID != playerID1)
                                         {
                                             Globals.flags[5] = true;
-                                            playerUnits.Add(cellList[playerx1, playery1].createUnit(new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
+                                            playerUnits.Add(cellList[playerx1, playery1].createUnit(playerx1, playery1,new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
                                             cellList[playerx1, playery1].SetPlayerOnCell();
                                             Debug.WriteLine(this.thisClient.GetName() + ": Created new player @ " + playerx1 + "," + playery1);
                                         }
@@ -344,18 +466,25 @@ namespace DoomCloneV2
                                     }
                                 }
                                 break;
-                            case "D":
+                            case "DEL":
                                 if (!server)
                                 {
-
-                                    if (commands[i].Substring(1, 2).Equals("EL"))
-                                    {
-                                        this.players.Clear();
-                                    }
+                                    //h = String.Empty;
+                                    Globals.pauseForInfo = true;
+                                    this.players.Clear();
+                                    this.units.Clear();
+                                    this.playerUnits.Clear();
+                                    this.cellList = new Cell[Globals.cellSize, Globals.cellSize];
+                                }
+                                break;
+                            case "DAL":
+                                if (!server)
+                                {
+                                    Globals.pauseForInfo = false;
                                 }
                                 break;
                             default:
-                                Debug.WriteLine("Invalid command: '" + commands[i].Substring(0, 1) + "'");
+                                Debug.WriteLine("Invalid command: '" + commands[i].Substring(0, 3) + "'");
                                 break;
                         }
                     }
@@ -369,214 +498,211 @@ namespace DoomCloneV2
             /// respective drawing functions in order
             /// </summary>
             /// <param name="unitsa">Whether to draw non-cell specfic items (Such as units or player views)</param>
-            private void FormUpdate(bool unitsa = false)
+            private void FormUpdate(bool unitsa = false,Graphics e = null)
             {
-            if (this.thisClient != null)
-            {
-
-                this.playerID = thisClient.GetID();
-            }
-            RunCommands();
-            if (cursorUp)
-            {
-                //this.cursor.DebugPrint();
-                this.cursor.MoveCursor();
-            }
-            //this.Update();
-            Bitmap n = new Bitmap(this.Width, this.Height);
-            Graphics g = Graphics.FromImage(n);
-            //Graphics g = this.CreateGraphics();
-            for (int i = 0; i < units.Count; i++)
-            {
-                units[i].bottomRight = new Point(-1, -1);
-                units[i].topLeft = new Point(-1, -1);
-            }
-            //GetTargetBlockViaDirection
-            bool playerVerticalDirection = false;
-            if (thisPlayer.dir == Directions.UP || thisPlayer.dir == Directions.DOWN)
-            {
-                playerVerticalDirection = true;
-            }
-            int offset = 0;
-            if (playerVerticalDirection)
-            {
-                offset = thisPlayer.GetX();
-            }
-            else
-            {
-                offset = thisPlayer.Gety();
-            }
-            int maxDepth = GetMaxDepth();
-            int loopFromBack = 0;
-            while (loopFromBack < maxDepth)
-            {
-               
-                int loopFromLeft = /*targetbase*/0;
-                int scanAcrossMax = ((maxDepth - loopFromBack)*2) + 1;
-                int halfScan = maxDepth - loopFromBack;
-                while (loopFromLeft <scanAcrossMax /*baselineTargetSquare*/)
+                if (this.thisClient != null)
                 {
-                    {
-                        int screenHeight = this.Height;
-                        int screenWidth = this.Width;
-                        //Create centreLine)
-
-                        int centreLine=1;
-                        //left
-                        if (loopFromLeft< halfScan)
-                        {
-                            centreLine = 0;
-                        }
-                        //right
-                        else if (loopFromLeft > halfScan)
-                        {
-                            centreLine = 2;
-                        }
-                        int pickX = 0;
-                        int pickY = 0;
-                        bool matToLeft = false;
-                        if (thisPlayer.dir == Directions.UP)
-                        {
-                            pickX = (offset - halfScan) + loopFromLeft;
-                            pickY =( thisPlayer.Gety() + 1 )- (maxDepth - loopFromBack);
-                        }
-                        else if (thisPlayer.dir == Directions.DOWN)
-                        {
-                            pickX = (offset + halfScan) - loopFromLeft;
-                            pickY = (thisPlayer.Gety() - 1) + (maxDepth - loopFromBack);
-                        }
-                        else if (thisPlayer.dir == Directions.LEFT)
-                        {
-                            pickY = (offset + halfScan) - loopFromLeft;
-                            pickX = (thisPlayer.GetX() + 1) - (maxDepth - loopFromBack);
-                        }
-                        else if (thisPlayer.dir == Directions.RIGHT)
-                        {
-                            pickY = (offset - halfScan) + loopFromLeft;
-                            pickX = (thisPlayer.GetX() - 1 )+ (maxDepth - loopFromBack);
-                        }
-                        if(pickX>=0 && pickX<cellList.GetLength(0) && pickY>=0 && pickY < cellList.GetLength(1))
-                        {
-                            //if (cellList[pickX,pickY].GetisUnitPresent()== unitsa)
-                            {
-                                bool MatFront = false;
-                                if (loopFromBack == maxDepth - 1 && loopFromLeft == 1 && cellList[pickX, pickY].GetMat())
-                                {
-                                    MatFront = true;
-                                }
-                                if (thisPlayer.dir == Directions.UP && pickX > 0 && centreLine == 2)
-                                {
-                                    if /*(cellList[pickX - 1, pickY].GetisUnitPresent() || */(cellList[pickX - 1, pickY].GetMat())
-                                    {
-                                        matToLeft = true;
-                                    }
-                                }
-                                else if (thisPlayer.dir == Directions.DOWN && pickX < cellList.GetLength(0) - 1 && centreLine == 2)
-                                {
-                                    if /*(cellList[pickX + 1, pickY].GetisUnitPresent() ||*/(cellList[pickX + 1, pickY].GetMat())
-                                    {
-                                        matToLeft = true;
-                                    }
-                                }
-                                else if (thisPlayer.dir == Directions.LEFT && pickY > 0 && centreLine == 2)
-                                {
-                                    if /*(cellList[pickX, pickY + 1].GetisUnitPresent() || */(cellList[pickX, pickY + 1].GetMat())
-                                    {
-                                        matToLeft = true;
-                                    }
-                                }
-                                else if (thisPlayer.dir == Directions.RIGHT && pickY < cellList.GetLength(0) - 1 && centreLine == 2)
-                                {
-                                    if /*(cellList[pickX, pickY - 1].GetisUnitPresent() || */(cellList[pickX, pickY - 1].GetMat())
-                                    {
-                                        matToLeft = true;
-                                    }
-                                }
-                                cellList[pickX, pickY].Draw(g, centreLine, loopFromBack, loopFromLeft, maxDepth, screenWidth, screenHeight, Globals.drawLines, matToLeft, MatFront);
-                            }
-                           
-                        }
-
-                    }
-                    loopFromLeft++;
-                    
+                    this.playerID = thisClient.GetID();
                 }
-                loopFromBack++;
-            }
-            if (unitsa == false)
-            {
-                g.Dispose();
-                FormUpdate(true);
-            }
-            else
-            {
-                if (Globals.drawText)
-                {
-                    if (Globals.flags[0])
-                    {
+                RunCommands();
 
-                        g.DrawString("DrawingMap! ", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, this.Height / 2);
-                        g.DrawString("Your direction is : " + thisPlayer.dir, new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 20);
-                        g.DrawString("Your MaxDepth is : " + maxDepth, new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
-
-
-                    }
-                    if (Globals.flags[3])
-                    {
-                        g.DrawString("Server Started!", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
-
-                    }
-                    if (Globals.flags[4])
-                    {
-                        g.DrawString("Client Started!", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
-
-                    }
-                    if (Globals.flags[5])
-                    {
-                        g.DrawString("Messaged Received At Client: " + Globals.Message, new Font("Arial", 16), new SolidBrush(Color.Red), 0, (this.Height / 2) + 60);
-
-                    }
-                    if (Globals.flags[6])
-                    {
-                        g.DrawString("Messaged Received At Server: " + Globals.ServerMessage, new Font("Arial", 10), new SolidBrush(Color.Blue), 0, (this.Height / 2) + 80);
-
-                    }
-                }
-               
-                //DrawGunShooting
-                if (Globals.flags[1] == true)
-                {
-                    RefreshPlayerView(this.thisPlayer.GetPlayerGunShoot());
-                    Globals.flags[1] = false;
-                    Globals.flags[2] = true;
-                }
-                //Set gun back to normal
-                else if (Globals.flags[2] == true)
-                {
-                    RefreshPlayerView(this.thisPlayer.GetPlayerGun());
-                    Globals.flags[2] = false;
-                }
-
-                if (Globals.drawGun)
-                {
-                    g.DrawImage(thisPlayer.playerView, new Point(this.Width - thisPlayer.playerView.Width - 10, this.Height - thisPlayer.playerView.Height - 40));
-                }
-                
-                if (cursorUp)
-                {
-                    this.cursor.Draw(g);
-                }
-                g.Dispose();
-                Graphics z = this.CreateGraphics();
-                z.DrawImage(n, 0, 0, n.Width, n.Height);
-                z.Dispose();
-
-                //n.Save("Image"+Globals.animations[1]+".png");
-                //Globals.animations[1]++;
-
-            }
+                Bitmap n = new Bitmap(this.Width, this.Height);
+                Graphics g = Graphics.FromImage(n);
            
-        }
+               
+                if (!Globals.pauseForInfo)
+                {
+                        if (cursorUp)
+                    {
+                        //this.cursor.DebugPrint();
+                        this.cursor.MoveCursor();
+                    }
+                    for (int i = 0; i < units.Count; i++)
+                    {
+                        units[i].bottomRight = new Point(-1, -1);
+                        units[i].topLeft = new Point(-1, -1);
+                    }
+                    //GetTargetBlockViaDirection
+                    bool playerVerticalDirection = false;
+                    if (thisPlayer.dir == Directions.UP || thisPlayer.dir == Directions.DOWN)
+                    {
+                        playerVerticalDirection = true;
+                    }
+                    int offset = 0;
+                    if (playerVerticalDirection)
+                    {
+                        offset = thisPlayer.GetX();
+                    }
+                    else
+                    {
+                        offset = thisPlayer.Gety();
+                    }
+                    int maxDepth = GetMaxDepth();
+                    int loopFromBack = 0;
+                    while (loopFromBack < maxDepth)
+                    {
+               
+                        int loopFromLeft = /*targetbase*/0;
+                        int scanAcrossMax = ((maxDepth - loopFromBack)*2) + 1;
+                        int halfScan = maxDepth - loopFromBack;
+                        while (loopFromLeft <scanAcrossMax /*baselineTargetSquare*/)
+                        {
+                            {
+                                int screenHeight = this.Height;
+                                int screenWidth = this.Width;
+                                //Create centreLine)
+
+                                int centreLine=1;
+                                //left
+                                if (loopFromLeft< halfScan)
+                                {
+                                    centreLine = 0;
+                                }
+                                //right
+                                else if (loopFromLeft > halfScan)
+                                {
+                                    centreLine = 2;
+                                }
+                                int pickX = 0;
+                                int pickY = 0;
+                                bool matToLeft = false;
+                                if (thisPlayer.dir == Directions.UP)
+                                {
+                                    pickX = (offset - halfScan) + loopFromLeft;
+                                    pickY =( thisPlayer.Gety() + 1 )- (maxDepth - loopFromBack);
+                                }
+                                else if (thisPlayer.dir == Directions.DOWN)
+                                {
+                                    pickX = (offset + halfScan) - loopFromLeft;
+                                    pickY = (thisPlayer.Gety() - 1) + (maxDepth - loopFromBack);
+                                }
+                                else if (thisPlayer.dir == Directions.LEFT)
+                                {
+                                    pickY = (offset + halfScan) - loopFromLeft;
+                                    pickX = (thisPlayer.GetX() + 1) - (maxDepth - loopFromBack);
+                                }
+                                else if (thisPlayer.dir == Directions.RIGHT)
+                                {
+                                    pickY = (offset - halfScan) + loopFromLeft;
+                                    pickX = (thisPlayer.GetX() - 1 )+ (maxDepth - loopFromBack);
+                                }
+                                if(pickX>=0 && pickX<cellList.GetLength(0) && pickY>=0 && pickY < cellList.GetLength(1))
+                                {
+                                    //if (cellList[pickX,pickY].GetisUnitPresent()== unitsa)
+                                    {
+                                        bool MatFront = false;
+                                        if (loopFromBack == maxDepth - 1 && loopFromLeft == 1 && cellList[pickX, pickY].GetMat())
+                                        {
+                                            MatFront = true;
+                                        }
+                                        if (thisPlayer.dir == Directions.UP && pickX > 0 && centreLine == 2)
+                                        {
+                                            if /*(cellList[pickX - 1, pickY].GetisUnitPresent() || */(cellList[pickX - 1, pickY].GetMat())
+                                            {
+                                                matToLeft = true;
+                                            }
+                                        }
+                                        else if (thisPlayer.dir == Directions.DOWN && pickX < cellList.GetLength(0) - 1 && centreLine == 2)
+                                        {
+                                            if /*(cellList[pickX + 1, pickY].GetisUnitPresent() ||*/(cellList[pickX + 1, pickY].GetMat())
+                                            {
+                                                matToLeft = true;
+                                            }
+                                        }
+                                        else if (thisPlayer.dir == Directions.LEFT && pickY > 0 && centreLine == 2)
+                                        {
+                                            if /*(cellList[pickX, pickY + 1].GetisUnitPresent() || */(cellList[pickX, pickY + 1].GetMat())
+                                            {
+                                                matToLeft = true;
+                                            }
+                                        }
+                                        else if (thisPlayer.dir == Directions.RIGHT && pickY < cellList.GetLength(0) - 1 && centreLine == 2)
+                                        {
+                                            if /*(cellList[pickX, pickY - 1].GetisUnitPresent() || */(cellList[pickX, pickY - 1].GetMat())
+                                            {
+                                                matToLeft = true;
+                                            }
+                                        }
+                                        cellList[pickX, pickY].Draw(g, centreLine, loopFromBack, loopFromLeft, maxDepth, screenWidth, screenHeight, Globals.drawLines, matToLeft, MatFront);
+                                    }
+                           
+                                }
+
+                            }
+                            loopFromLeft++;
+                    
+                        }
+                        loopFromBack++;
+                    }
+                    if (Globals.drawText)
+                        {
+                            if (Globals.flags[0])
+                            {
+
+                                g.DrawString("DrawingMap! ", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, this.Height / 2);
+                                g.DrawString("Your direction is : " + thisPlayer.dir, new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 20);
+                                g.DrawString("Your MaxDepth is : " + maxDepth, new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
+
+
+                            }
+                            if (Globals.flags[3])
+                            {
+                                g.DrawString("Server Started!", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
+
+                            }
+                            if (Globals.flags[4])
+                            {
+                                g.DrawString("Client Started!", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
+
+                            }
+                            if (Globals.flags[5])
+                            {
+                                g.DrawString("Messaged Received At Client: " + Globals.Message, new Font("Arial", 16), new SolidBrush(Color.Red), 0, (this.Height / 2) + 60);
+
+                            }
+                            if (Globals.flags[6])
+                            {
+                                g.DrawString("Messaged Received At Server: " + Globals.ServerMessage, new Font("Arial", 10), new SolidBrush(Color.Blue), 0, (this.Height / 2) + 80);
+
+                            }
+                    }
+
+                        //DrawGunShooting
+                        if (Globals.flags[1] == true)
+                        {
+                            RefreshPlayerView(this.thisPlayer.GetPlayerGunShoot());
+                            Globals.flags[1] = false;
+                            Globals.flags[2] = true;
+                        }
+                        //Set gun back to normal
+                        else if (Globals.flags[2] == true)
+                        {
+                            RefreshPlayerView(this.thisPlayer.GetPlayerGun());
+                            Globals.flags[2] = false;
+                        }
+
+                        if (Globals.drawGun)
+                        {
+                            g.DrawImage(thisPlayer.playerView, new Point(this.Width - thisPlayer.playerView.Width - 10, this.Height - thisPlayer.playerView.Height - 40));
+                        }
+
+                        if (cursorUp)
+                        {
+                            this.cursor.Draw(g);
+                        }
+                }
+                else{
+                        g.DrawString("Connected, Building new World", new Font("Arial", 16), new SolidBrush(Color.Black), this.Width / 2, (this.Height / 2) + 40);
+
+                }
+                    g.Dispose();
+                    e.DrawImage(n, 0, 0, n.Width, n.Height);
+                    //e.Dispose();
+
+                    //n.Save("Image"+Globals.animations[1]+".png");
+                    //Globals.animations[1]++;
+
+            }
         /// <summary>
         /// RefreshPlayerView takes a given image and sets the form's playerview as tat image resized to the application size
         /// </summary>
@@ -759,6 +885,28 @@ namespace DoomCloneV2
                 }
             }
         }
+        private void MoveCommand(char direction)
+        {
+            if (Globals.SinglePlayer)
+            {
+                AddToCommandString("MVP"+String.Format("{0:00}", 0) +direction);
+            }
+            else
+            {
+                this.thisClient.Write("MVP" + String.Format("{0:00}", thisClient.GetID()) + direction);
+            }
+        }
+        private void DirectionCommand(char direction)
+        {
+            if (Globals.SinglePlayer)
+            {
+                AddToCommandString("DIP" + String.Format("{0:00}", 0) + direction);
+            }
+            else
+            {
+                this.thisClient.Write("DIP" + String.Format("{0:00}", this.thisClient.GetID()) + direction);
+            }
+        }
         /// <summary>
         /// OnKeyUp handles key presses done while a <see cref="Form1"/> isntance is the active window
         /// </summary>
@@ -793,44 +941,19 @@ namespace DoomCloneV2
                     Globals.drawText = !Globals.drawText;
                     break;
                 case Keys.S:
-                    if (Globals.SinglePlayer)
-                    {
-                        AddToCommandString("MB0");
-                    }
-                    else
-                    {
-                        this.thisClient.Write("MB"+thisClient.GetID());
-                    }
+
+                    MoveCommand('B');
                     break;
                 case Keys.W:
-                    if (Globals.SinglePlayer)
-                    {
-                        AddToCommandString("MF0");
-                    }
-                    else
-                    {
-                        this.thisClient.Write("MF" + thisClient.GetID());
-                    }
+
+                    MoveCommand('F');
                     break;
                 case Keys.D:
-                    if (Globals.SinglePlayer)
-                    {
-                        AddToCommandString("MR0");
-                    }
-                    else
-                    {
-                        this.thisClient.Write("MR" + thisClient.GetID());
-                    }
+
+                    MoveCommand('R');
                     break;
                 case Keys.A:
-                    if (Globals.SinglePlayer)
-                    {
-                        AddToCommandString("ML0");
-                    }
-                    else
-                    {
-                        this.thisClient.Write("ML" + thisClient.GetID());
-                    }
+                    MoveCommand('L');
                     break;
                 case Keys.Q:
                     this.thisPlayer.RefreshGun();
@@ -976,7 +1099,19 @@ namespace DoomCloneV2
                     {
                         if (unitClicked.alive == true)
                         {
-                            unitClicked.DealDamage(thisPlayer.GetGunDamage());
+                            Debug.WriteLine("Unit is alive, dealing damage");
+                            Debug.WriteLine("Player is "+ String.Format("{0:00}",this.playerID));
+                            Debug.WriteLine("Gun Damage is " + String.Format("{0:0000}", thisPlayer.GetGunDamage()));
+                            Debug.WriteLine("Enemy index i is " + String.Format("{0:000}",i));
+                            if (Globals.SinglePlayer)
+                            {
+                                AddToCommandString("SHE"+String.Format("{0:000}00{0:0000}",i,thisPlayer.GetGunDamage()));
+                            }
+                            else
+                            {
+                                this.thisClient.Write("SHE" + String.Format("{0:000}{0:00}{0:0000}", i,thisClient.GetID(), thisPlayer.GetGunDamage()));
+                            }
+                           // unitClicked.DealDamage(thisPlayer.GetGunDamage());
                         }
                     }
                 }
@@ -1063,8 +1198,7 @@ namespace DoomCloneV2
                 else if (switcher == Directions.RIGHT)
                 {
 
-                    thisPlayer.ChangeDirection("Right");
-                    Debug.WriteLine("Changing Direction Right");
+                    DirectionCommand('R');
                     switcher = Directions.NULL;
                     this.Invalidate();
                 }
@@ -1079,8 +1213,7 @@ namespace DoomCloneV2
                 else if (switcher == Directions.LEFT)
                 {
 
-                    thisPlayer.ChangeDirection("Left");
-                    Debug.WriteLine("Changing Direction Left");
+                    DirectionCommand('L');
                     switcher = Directions.NULL;
                     this.Invalidate();
                 }

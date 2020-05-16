@@ -69,9 +69,14 @@ namespace DoomCloneV2
         }
         public String GetCommands()
         {
-            String returna = this.data;
+
+            String returna = this.data.Trim();
+            if(this.data != String.Empty)
+            {
+                Print("data " + returna + " being accessed");
+            }
             this.data = String.Empty;
-            return returna.Trim();
+            return returna;
         }
         public void Write(String writeData)
         {
@@ -143,7 +148,7 @@ namespace DoomCloneV2
                     Print(String.Format("Got the following input from Server: {0}",returnString));
                     Globals.flags[5] = true;
                     Globals.Message = returnString;
-                    this.data = returnString;
+                    this.data += returnString;
                     locker = false;
                     return returnString;
 

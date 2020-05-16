@@ -73,8 +73,7 @@ namespace DoomCloneV2
             client.Write("COC"+client.GetID());
             while (true)
             {
-                String command = String.Empty;
-                command = client.Read();
+                client.Read();
             }
         }
         public static void Write(object c1)

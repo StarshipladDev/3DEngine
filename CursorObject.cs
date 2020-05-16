@@ -52,7 +52,6 @@ namespace DoomCloneV2
         }
         public void Draw(Graphics g)
         {
-            Debug.WriteLine("Drawing at "+x +","+y +" with image width,height "+this.imageWidth+","+imageHeight);
             g.DrawImage(this.cursorImage, x-(this.cursorImage.Width/2), y-(this.cursorImage.Height / 2));
         }
         public int[] GetCoords()
@@ -89,8 +88,6 @@ namespace DoomCloneV2
         {
             if(goalx==x && goaly == y)
             {
-
-                Debug.WriteLine("New Goal had to be called");
                 NewGoal();
             }
             x=MoveTowards(x, goalx);
@@ -100,10 +97,8 @@ namespace DoomCloneV2
         }
         public int MoveTowards(int value, int goal)
         {
-            Debug.Write("MoveTowardsCalled , value is "+value);
             if (value > goal)
             {
-                Debug.WriteLine(String.Format("vlaue {0} is greater than {1}",value,goal));
                 if (value - goal <= stepSize)
                 {
                     value = goal;

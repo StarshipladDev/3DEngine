@@ -95,6 +95,9 @@
     <Content Include="config.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Resources\Images\DoomClone.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\Images\Enemy\Devil\Devil_Death.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

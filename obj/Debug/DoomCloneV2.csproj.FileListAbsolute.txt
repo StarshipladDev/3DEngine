@@ -23,3 +23,4 @@ C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\obj\Debug\DoomCloneV2.Form
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\bin\Debug\config.xml
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\bin\Debug\Resources\Images\Friendly\Player1\Player1_Idle.png
 C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\bin\Debug\Resources\Images\Utility\Crosshair.png
+C:\Users\Oscar\Documents\Code\C#\DoomCloneV2Animation\bin\Debug\Resources\Images\DoomClone.ico

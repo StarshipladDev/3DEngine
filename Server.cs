@@ -94,7 +94,7 @@ namespace DoomCloneV2
             while (i <= serv.counter)
             {
                 NetworkStream nws = serv.clients[i].GetStream();
-                String clientNumber = "CO" + String.Format("{0:00}",i)+"^";
+                String clientNumber = "COP" + String.Format("{0:00}",i)+"^";
                 Debug.WriteLine("Server: Sending to client" + i + " : " + clientNumber);
                 Byte[] ba = Encoding.ASCII.GetBytes(clientNumber);
                 Globals.flags[6] = true;
