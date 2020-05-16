@@ -32,7 +32,7 @@ progress and follow better SDLC practice.
 
 ## Latest Update
 
-02/05/2020 - TCP Branch Working (Marginally)
+16/05/2020 - Synced worlds over networks, synced damage models
 
 ## Next Build
 
@@ -70,4 +70,6 @@ The Program currently has the following commands:
 *3* Toggle drawing player gun
 *4* Toggle displaying debug text
 
+To Fire, click on an enemy who is alive. A cursor wll appear,
+and the next 3 clicks will shoot at the centre of the cursor.
 
