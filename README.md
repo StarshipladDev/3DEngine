@@ -38,6 +38,7 @@ progress and follow better SDLC practice.
 ## Next Build
 
 Week ending 31/05/2020 - Friendship Build
+-This will now be released 04/06/2020
 
 * TCP Multiplayer
 
