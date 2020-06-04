@@ -69,7 +69,7 @@ namespace DoomCloneV2
         public static void ClientThread(object c1)
         {
             Client client = (Client)c1;
-            client.Write("PClient '"+client.GetName()+"' Connected!");
+            client.Write("PRT Client '"+client.GetName()+"' Connected!");
             client.Write("COC"+client.GetID());
             while (true)
             {

@@ -110,8 +110,6 @@ namespace DoomCloneV2
             }
             else if (goal > value)
             {
-
-                Debug.WriteLine(String.Format("goal {1} is greater than value {0}", value, goal));
                 if (goal - value <= stepSize)
                 {
                     value = goal;
@@ -121,7 +119,6 @@ namespace DoomCloneV2
                     value += stepSize;
                 }
             }
-            Debug.WriteLine(" After process it is now "+value);
             return value;
             
         }

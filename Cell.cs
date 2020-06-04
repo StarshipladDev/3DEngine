@@ -13,11 +13,12 @@ namespace DoomCloneV2
         Color drawColor;
         Color floorColor;
         Color roofColor;
-        bool playerOnCell = false;
         bool mat = false;
         bool isUnitOnCell = false;
+        int playerOnCellIndex = -1;
         int type = 0;
         Unit unitOnCell = null;
+        Projectile projOnCell = null;
         public Cell(bool mat, Color drawColor, Color floorColor, Color roofColor)
         {
             this.mat = mat;
@@ -29,13 +30,26 @@ namespace DoomCloneV2
             this.floorColor = floorColor;
             this.roofColor = roofColor;
         }
+        public void SetPlayer(int playerIndex)
+        {
+            this.playerOnCellIndex = playerIndex;
+        }
+        public int GetPlayer()
+        {
+            return this.playerOnCellIndex;
+            
+        }
         public int GetCellType()
         {
             return type;
         }
-        public void SetPlayerOnCell()
+        public void SetProjectile(Projectile p)
         {
-            this.playerOnCell = true;
+            this.projOnCell = p;
+        }
+        public void RemoveProjecticle()
+        {
+            this.projOnCell = null;
         }
         public void RemoveUnit()
         {
@@ -46,17 +60,12 @@ namespace DoomCloneV2
         {
             this.isUnitOnCell = true;
             this.unitOnCell = new Unit();
-
             this.unitOnCell.setUpUnit(x,y,unitPic, unitPicDead);
             return this.unitOnCell;
         }
         public bool GetisUnitPresent()
         {
             return this.isUnitOnCell;
-        }
-        public bool GetIsPlayerPresent()
-        {
-            return this.playerOnCell;
         }
         public Unit GetUnitOnCell()
         {
@@ -134,7 +143,18 @@ namespace DoomCloneV2
                     {
                         //DrawFloor
                         points = new Point[] { new Point(bottomLeft[0], bottomLeft[1]), new Point(bottomLeftPrior[0], bottomLeftPrior[1]), new Point(bottomRightPrior[0], bottomRightPrior[1]), new Point(bottomRight[0], bottomRight[1]) };
-                        g.FillPolygon(new SolidBrush(this.floorColor), points);
+                        //MakefloorColor red if projectile on it;
+                        Color drawColorOfFloor = floorColor;
+                        if (this.projOnCell != null)
+                        {
+                            drawColorOfFloor = Color.FromArgb(125,255,0,0);
+                        }
+                        //Make floorColor Green if palyer on it;
+                        if (this.GetPlayer()>-1 )
+                        {
+                            drawColorOfFloor = Color.FromArgb(125, 0,255, 0);
+                        }
+                        g.FillPolygon(new SolidBrush(drawColorOfFloor), points);
                         //DrawRoof
                         points = new Point[] { new Point(topLeft[0], topLeft[1]), new Point(topRight[0], topRight[1]), new Point(topRightPrior[0], topRightPrior[1]), new Point(topLeftPrior[0], topLeftPrior[1]) };
                         g.FillPolygon(new SolidBrush(this.roofColor), points);
@@ -175,6 +195,10 @@ namespace DoomCloneV2
                         if ((isUnitOnCell) && unitOnCell!=null)
                         {
                             unitOnCell.Draw(g, drawLength, drawHeight, topLeft);
+                        }
+                        if (this.projOnCell != null)
+                        {
+                            projOnCell.Draw(g, drawLength, drawHeight, topLeft);
                         }
                     }
 

@@ -25,7 +25,7 @@ namespace DoomCloneV2
     {
         int playerID = 0;
         Cell[,] cellList = new Cell[Globals.cellSize, Globals.cellSize];
-        Player thisPlayer = new Player(4,4,1);
+        Player thisPlayer = new Player(4,4,1,0);
         CursorObject cursor = null;
         List<Player> players = new List<Player>();
         Directions switcher;
@@ -37,6 +37,7 @@ namespace DoomCloneV2
         List<Unit> units = new List<Unit>();
         List<Unit> playerUnits = new List<Unit>();
         String commandString = String.Empty;
+        String commandStringsNew = String.Empty;
         Color ColorFloor;
         Color ColorRoof;
         /// <summary>
@@ -145,6 +146,11 @@ namespace DoomCloneV2
             if (Globals.animations[0] == Globals.MAXFRAMES){
                 Globals.animations[0] = 0;
             }
+            Globals.ticks++;
+            if (Globals.ticks == 10000)
+            {
+                Globals.ticks = 0;
+            }
             this.Invalidate();
         }
         /// <summary>
@@ -177,7 +183,8 @@ namespace DoomCloneV2
         }
         /// <summary>
         /// FormUpdate is used to perform the graphical calcualtiosn for where various objects will appear on the screen, and call their
-        /// respective drawing functions in order
+        /// respective drawing functions in order.
+        /// Commands must be added as a list from inside
         /// </summary>
         /// <param name="unitsa">Whether to draw non-cell specfic items (Such as units or player views)</param>
         /// 
@@ -195,11 +202,11 @@ namespace DoomCloneV2
         ///------
         ///SH - Deal Damage
         ///SHE - Shoot Enemy SHE[000 EnemyIndex][00 Palyer ID][0000 Damage]
-        ///SHP - Deal Damage To Player
+        ///SHP - Deal Damage To Player -SHP[000 PlayerIndex][000 Damage]
         ///
         /// ------
         ///SE - Set GameWorld
-        ///SEP - Set Player-SEP[00 PlayerID][000 Player X Position][000 Player Y Position] - Creates Player of set ID at set co-ords
+        ///SEP - Set Player-SEP[00 PlayerID][000 Player X Position][000 Player Y Position][char(1) Player direction] - Creates Player of set ID at set co-ords
         ///SEW - Set World Block - SEW([000 BlockType][000 X Pos][000 Y Pos] x GLobals.MaxCell)- Creates Block of type 't' at location 'x','y'
         ///SEE - Set Enemy - SEE[000 Enemy Type][000 X Pos][000 Y Pos][0000 Deal Damage] - Places enemy and deals damage
         ///
@@ -211,10 +218,76 @@ namespace DoomCloneV2
         ///DEL-Delete all Client Players
         ///DAL- Let CLient Draw AGain
         ///
+        ///--------
+        /// CR- Create
+        /// CRP - Create Projectile- CRE[000 Projectile Type][000 000EnemyID][000 000Target X,Y]
+        /// 
+        ///
+        ///---------
+        ///RP= Run Projectiles
+        /// RPR - Run Projectile -RPR[000]EnemyIdPrjecticleCount][000 EnemyId][000 Projectile ID]- Runs stated projectile's 'RunProjectile' function.
+        ///
         ///
         private void RunCommands()
         {
 
+
+            if (server || Globals.SinglePlayer)
+            {
+                if (Globals.ticks % (Globals.MAXFRAMES) == 0)
+                {
+
+                    for (int i = 0; i < units.Count; i++)
+                    {
+                        if (units[i].projs.Count > 0)
+                        {
+                            String commander = "RPR" + String.Format("{0:000}", units[i].projs.Count);
+                            for (int f = 0; f < units[i].projs.Count; f++)
+                            {
+
+                                commander += String.Format("{0:000}{1:000}", i, f);
+
+
+                            }
+
+                            if (Globals.SinglePlayer)
+                            {
+                                AddToCommandString(commander);
+                            }
+                            else
+                            {
+                                this.thisClient.Write(commander);
+                            }
+                        }
+                        
+                    }
+                }
+                /*
+             * Projectile implementation
+             * */
+                if (Globals.ticks % (Globals.MAXFRAMES * 4) == 0)
+                {
+
+                    Random rand = new Random();
+                    int playerNum = rand.Next(players.Count);
+                    int unitNum = rand.Next(units.Count);
+                    if (rand.Next(10) > 1 && units[unitNum].alive)
+                    {
+                        if (!Globals.SinglePlayer)
+                        {
+                            this.thisClient.Write("CRP" + String.Format("{0:000}{1:000}{2:000}", unitNum, players[playerNum].GetX(), players[playerNum].Gety()));
+
+                        }
+                        else
+                        {
+                            AddToCommandString("CRP" + String.Format("{0:000}{1:000}{2:000}", unitNum, players[playerNum].GetX(), players[playerNum].Gety()));
+                        }
+                    }
+
+                }
+                
+            }
+            
             String h = commandString;
             if (!Globals.SinglePlayer && thisClient != null)
             {
@@ -224,7 +297,8 @@ namespace DoomCloneV2
                     h = thisClient.GetCommands();
                 }
             }
-            
+            h += this.commandStringsNew;
+            this.commandStringsNew = String.Empty;
             if (h != String.Empty)
             {
                 Debug.WriteLine("Running commands :" + h);
@@ -272,8 +346,7 @@ namespace DoomCloneV2
                                     {
                                         Debug.WriteLine("Removing player on " + oldx + "," + oldy + ", setting new player on" + players[x].GetX() + "," + players[x].Gety()) ;
                                         cellList[oldx, oldy].RemoveUnit();
-                                        playerUnits[x] = (cellList[players[x].GetX(), players[x].Gety()].createUnit(players[x].GetX(), players[x].Gety(),new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
-                                        cellList[players[x].GetX(), players[x].Gety()].SetPlayerOnCell();
+                                        playerUnits[x] = (cellList[players[x].GetX(), players[x].Gety()].createUnit(players[x].GetX(), players[x].Gety(),new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
                                         if (cellList[oldx, oldy].GetisUnitPresent())
                                         {
                                             Debug.WriteLine("There IS a unit on the old coords "+oldx+","+oldy);
@@ -286,23 +359,89 @@ namespace DoomCloneV2
                                 }
                                 
                                 break;
+                            case "RPR":
+                                
+                                int projCount = Int32.Parse(commands[i].Substring(3, 3));
+                                Debug.WriteLine(" Firing "+ projCount+" Projectile's ");
 
+                                for (int projCounter = 0; projCounter < projCount; projCounter++)
+                                {
+                                    Debug.WriteLine("------FIRING PROJECTILE--------");
+
+                                    int unitNumber = Int32.Parse(commands[i].Substring((projCounter * 6) + 6, 3));
+                                    if (units[unitNumber].projs.Count <= projCounter)
+                                    {
+                                        Debug.WriteLine("Unit had less projectiles than counter, ending");
+                                        break;
+                                    }
+                                    int damage = units[unitNumber].projs[projCounter].GetDamage();
+
+                                    int returnCode = units[unitNumber].projs[projCounter].RunProjecticle(this.cellList);
+                                    Debug.WriteLine("Form1: Fireball returncode is :" + returnCode);
+
+                                    if (returnCode > -2)
+
+                                    {
+                                        Debug.WriteLine("Fireball hit something with returnCode" + returnCode);
+                                        units[unitNumber].projs.RemoveAt(projCounter);
+                                        projCounter--;
+
+                                    }
+                                    if (returnCode > -1)
+                                    {
+                                        Debug.WriteLine("Fireball hit player "+returnCode);
+                                        String ProjectileHitString = "SHP" + String.Format("{0:000}{1:000}", returnCode, damage);
+                                        if (!Globals.SinglePlayer && server)
+                                        {
+                                            Debug.WriteLine("Server sending " + ProjectileHitString);
+                                            this.thisClient.Write(ProjectileHitString);
+
+                                        }
+                                        if (Globals.SinglePlayer)
+                                        {
+                                            Debug.WriteLine("SinglePlayer sending " + ProjectileHitString);
+                                            commandStringsNew += ProjectileHitString;
+                                            Debug.WriteLine("Comand last idnex now "+commandString);
+                                        }
+                                    }
+                                    Debug.WriteLine("------END FIRING PROJECTILE--------");
+                                }
+                                
+                                break;
                             case "DIP":
                                 int id = Int32.Parse(commands[i].Substring(3, 2));
                                 if (id > -1 && id < players.Count)
                                 {
                                     char directionChar = Char.Parse(commands[i].Substring(5, 1));
-                                    Debug.WriteLine("ROtating Player " + id + " " + directionChar);
+                                    Debug.WriteLine("Rotating Player " + id + " " + directionChar);
                                     switch (directionChar)
                                     {
                                         case 'L':
                                             players[id].ChangeDirection("Left");
                                             break;
                                         case 'R':
-                                            players[id].ChangeDirection("Left");
+                                            players[id].ChangeDirection("Right");
                                             break;
                                     }
                                 }
+                                break;
+                            case "SHP":
+                                Debug.WriteLine("------DEALING DAMAGE TO PLAYER--------");
+                                int playerHit = Int32.Parse(commands[i].Substring(3, 3));
+                                int damageToPlayer = Int32.Parse(commands[i].Substring(6, 3));
+                                Debug.WriteLine("Dealing damage to player" + playerHit);
+                                players[playerHit].doDamage(damageToPlayer);
+                                if (players[playerHit].IsDead())
+                                {
+                                    if (playerHit != playerID)
+                                    {
+                                        Debug.WriteLine("Player " + playerHit + " Died");
+                                        playerUnits[playerHit].Kill();
+                                    }
+                                }
+                                Debug.WriteLine("Player " + playerHit + " health is " + players[playerHit].health);
+                                Debug.WriteLine("------DEALING DAMAGE TO PLAYER--------");
+
                                 break;
                             //
                             //PRINT VALUE
@@ -323,16 +462,33 @@ namespace DoomCloneV2
                                 //
                                 if (server)
                                 {
+                                    Globals.Pause=true;
                                     Thread.Sleep(2000);
                                     Debug.WriteLine("Performing ServerClient Connection Request by making new player");
-                                    players.Add(new Player(5 + players.Count, 5 + players.Count, 1));
-                                    playerUnits.Add(cellList[5 + players.Count - 1, 5 + players.Count - 1].createUnit(5 + players.Count - 1, 5 + players.Count - 1, new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
+                                    players.Add(new Player(5 + players.Count, 5 + players.Count, 1,players.Count-1));
+                                    playerUnits.Add(cellList[5 + players.Count - 1, 5 + players.Count - 1].createUnit(5 + players.Count - 1, 5 + players.Count - 1, new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
                                     Debug.WriteLine("ServerClient: Messaging out New Players. There are " + players.Count + " players");
                                     thisClient.Write("DEL");
                                     ///SEP - Set Player-SEP[00 PlayerID][000 Player X Position][000 Player Y Position] - Creates Player of set ID at set co-ords
                                     ///SEW - Set World Block - SEW[000 BlockType][000 X Pos][000 Y Pos] - Creates Block of type 't' at location 'x','y'
                                     ///SEE - Set Enemy - SEE[000 Enemy Type][000 X Pos][000 Y Pos][0000 Deal Damage] - Places enemy and deals damage
-                                   
+
+                                    ///Delete All Projectiles before sending data
+                                    for (int r = 0; r < units.Count; r++)
+                                    {
+                                        if (units[r].projs.Count > 0)
+                                        {
+                                            for (int t = 0; t < units[r].projs.Count; t++)
+                                            {
+                                                cellList[units[r].projs[t].x, units[r].projs[t].y].RemoveProjecticle();
+                                                units[r].projs.RemoveAt(t);
+                                                t--;
+
+                                            }
+                                        }
+
+                                    }
+                                    ///End deleting all data before firing projectiles
                                     for (int f = 0; f < Globals.cellSize; f++)
                                     {
                                         String builder = "SEW";
@@ -361,15 +517,32 @@ namespace DoomCloneV2
                                     }
                                     for (int f = 0; f < players.Count; f++)
                                     {
-
+                                        char directionOfPlayer = 'U';
                                         int playerID = f;
                                         int playerx = players[playerID].GetX();
                                         int playery = players[playerID].Gety();
+                                        Directions d = players[playerID].GetDirection();
+                                        switch (d)
+                                        {
+                                            case Directions.DOWN:
+                                                directionOfPlayer = 'D';
+                                                break;
+                                            case Directions.UP:
+                                                directionOfPlayer = 'U';
+                                                break;
+                                            case Directions.LEFT:
+                                                directionOfPlayer = 'L';
+                                                break;
+                                            case Directions.RIGHT:
+                                                directionOfPlayer = 'R';
+                                                break;
+                                        }
                                         Debug.WriteLine(this.thisClient.GetName() + ": Created new player @ " + playerx + "," + playery + " via serverClient");
-                                        thisClient.Write("SEP" + String.Format("{0:00}", playerID) + String.Format("{0:000}", playerx) + String.Format("{0:000}", playery));
+                                        thisClient.Write("SEP" + String.Format("{0:00}", playerID) + String.Format("{0:000}", playerx) + String.Format("{0:000}", playery)+ directionOfPlayer);
 
                                     }
                                     thisClient.Write("DAL");
+                                    Globals.Pause = false;
                                 }
                                 break;
                             case "SEW":
@@ -392,6 +565,12 @@ namespace DoomCloneV2
                                     }
                                 }
                             break;
+                            case "CRP":
+                                int unitID = Int32.Parse(commands[i].Substring(3, 3));
+                                int targetX = Int32.Parse(commands[i].Substring(6, 3));
+                                int targetY = Int32.Parse(commands[i].Substring(9, 3));
+                                units[unitID].CreateProjectile("Fireball", targetX, targetY);
+                                break;
                             case "SEE":
                                 if (!server)
                                 {
@@ -446,23 +625,43 @@ namespace DoomCloneV2
                                     int playerID1 = Int32.Parse(commands[i].Substring(3,2));
                                     int playerx1 = Int32.Parse(commands[i].Substring(5, 3));
                                     int playery1 = Int32.Parse(commands[i].Substring(8, 3));
-                                    Globals.Message = "Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count;
+                                    char d = Char.Parse(commands[i].Substring(11,1));
+                                Globals.Message = "Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count;
                                     Debug.WriteLine("Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count);
                                     if (this.players.Count == playerID1)
                                     {
-                                        this.players.Add(new Player(playerx1, playery1, 1));
-                                        if(playerID!=-1 && playerID != playerID1)
+                                        this.players.Add(new Player(playerx1, playery1, 1,playerID1));
+                                        Directions dir=Directions.NULL;
+                                        switch (d)
+                                        {
+                                            case 'D':
+                                                dir = Directions.DOWN;
+                                                break;
+                                            case 'U':
+                                                dir = Directions.UP;
+                                                break;
+                                            case 'L':
+                                                dir = Directions.LEFT;
+                                                break;
+                                            case 'R':
+                                                dir = Directions.RIGHT;
+                                                break;
+                                        }
+                                        players[playerID1].SetDirection(dir);
+                                        if (this.playerID!=-1 && this.playerID != playerID1)
                                         {
                                             Globals.flags[5] = true;
-                                            playerUnits.Add(cellList[playerx1, playery1].createUnit(playerx1, playery1,new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
-                                            cellList[playerx1, playery1].SetPlayerOnCell();
+                                            playerUnits.Add(cellList[playerx1, playery1].createUnit(playerx1, playery1,new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
+                                            cellList[playerx1, playery1].SetPlayer(players[playerID1].GetPlayerID());
                                             Debug.WriteLine(this.thisClient.GetName() + ": Created new player @ " + playerx1 + "," + playery1);
                                         }
                                     }
-                                    if (playerID != -1 && playerID == playerID1)
+                                    if (playerID != -1 && this.playerID == playerID1)
                                     {
                                         playerUnits.Add(null);
-                                        this.thisPlayer = this.players[playerID];
+                                        this.thisPlayer = this.players[this.playerID];
+                                        this.players[playerID1].SetID(this.playerID);
+                                        cellList[playerx1, playery1].SetPlayer(players[playerID1].GetPlayerID());
                                     }
                                 }
                                 break;
@@ -508,9 +707,9 @@ namespace DoomCloneV2
 
                 Bitmap n = new Bitmap(this.Width, this.Height);
                 Graphics g = Graphics.FromImage(n);
-           
-               
-                if (!Globals.pauseForInfo)
+
+                
+            if (!Globals.pauseForInfo)
                 {
                         if (cursorUp)
                     {
@@ -639,13 +838,14 @@ namespace DoomCloneV2
                             if (Globals.flags[0])
                             {
 
-                                g.DrawString("DrawingMap! ", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, this.Height / 2);
-                                g.DrawString("Your direction is : " + thisPlayer.dir, new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 20);
-                                g.DrawString("Your MaxDepth is : " + maxDepth, new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
+                                g.DrawString("DrawingMap! ", new Font("Arial", 16), new SolidBrush(Color.Red),0, 0);
+                                g.DrawString("Your direction is : " + thisPlayer.dir, new Font("Arial", 16), new SolidBrush(Color.Red), 0,20);
+                                g.DrawString("Your MaxDepth is : " + maxDepth, new Font("Arial", 16), new SolidBrush(Color.Red), 0,40);
+                                g.DrawString("PlayerID : " + this.thisPlayer.GetPlayerID(), new Font("Arial", 16), new SolidBrush(Color.Yellow), 0,60);
 
 
-                            }
-                            if (Globals.flags[3])
+                    }
+                    if (Globals.flags[3])
                             {
                                 g.DrawString("Server Started!", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
 
@@ -695,8 +895,14 @@ namespace DoomCloneV2
                         g.DrawString("Connected, Building new World", new Font("Arial", 16), new SolidBrush(Color.Black), this.Width / 2, (this.Height / 2) + 40);
 
                 }
-                    g.Dispose();
-                    e.DrawImage(n, 0, 0, n.Width, n.Height);
+            if (thisPlayer.IsDead())
+            {
+                g.FillRectangle(new SolidBrush(Color.FromArgb(125, 255, 0, 0)), new RectangleF(0, 0, this.Width, this.Height));
+                g.DrawString("You Died", new Font("Comic Sans", 60), new SolidBrush(Color.Red), 0, (this.Height / 2) + 40);
+
+            }
+            g.Dispose();
+            e.DrawImage(n, 0, 0, n.Width, n.Height);
                     //e.Dispose();
 
                     //n.Save("Image"+Globals.animations[1]+".png");
@@ -752,7 +958,7 @@ namespace DoomCloneV2
             Debug.WriteLine("Move command issued");
             if (direction == "Forward")
             {
-                switch (thisPlayer.dir)
+                switch (p.dir)
                 {
                     case Directions.UP:
                         ChangeY(true,p);
@@ -770,7 +976,7 @@ namespace DoomCloneV2
             }
             if (direction.Equals("Left"))
             {
-                switch (thisPlayer.dir)
+                switch (p.dir)
                 {
                     case Directions.UP:
                         ChangeX(false, p);
@@ -788,7 +994,7 @@ namespace DoomCloneV2
             }
             if (direction.Equals("Right"))
             {
-                switch (thisPlayer.dir)
+                switch (p.dir)
                 {
                     case Directions.UP:
                         ChangeX(true, p);
@@ -806,7 +1012,7 @@ namespace DoomCloneV2
             }
             if (direction.Equals("Back"))
             {
-                switch (thisPlayer.dir)
+                switch (p.dir)
                 {
                     case Directions.UP:
                         ChangeY(false, p);
@@ -838,6 +1044,8 @@ namespace DoomCloneV2
                 {
                     if (!cellList[x + 1, y].GetMat() && !cellList[x + 1, y].GetisUnitPresent())
                     {
+                        cellList[x, y].SetPlayer(-1);
+                        cellList[x + 1, y].SetPlayer(p.GetPlayerID());
                         p.SetX(p.GetX() + 1);
                     }
                 }
@@ -848,6 +1056,8 @@ namespace DoomCloneV2
                 {
                     if (!cellList[x - 1, y].GetMat() && !cellList[x - 1, y].GetisUnitPresent())
                     {
+                        cellList[x, y].SetPlayer(-1);
+                        cellList[x - 1, y].SetPlayer(p.GetPlayerID());
                         p.SetX(p.GetX() - 1);
                     }
                 }
@@ -867,7 +1077,8 @@ namespace DoomCloneV2
                 {
                     if (!cellList[x, y - 1].GetMat() && !cellList[x, y - 1].GetisUnitPresent())
                     {
-
+                        cellList[x, y].SetPlayer(-1);
+                        cellList[x, y-1].SetPlayer(p.GetPlayerID());
                         p.SetY(p.Gety() - 1);
                     }
                 }
@@ -879,7 +1090,8 @@ namespace DoomCloneV2
                 {
                     if (!cellList[x, y + 1].GetMat() && !cellList[x, y + 1].GetisUnitPresent())
                     {
-
+                        cellList[x, y].SetPlayer(-1);
+                        cellList[x, y + 1].SetPlayer(p.GetPlayerID());
                         p.SetY(p.Gety() + 1);
                     }
                 }
@@ -1055,26 +1267,33 @@ namespace DoomCloneV2
             //Y
             for (int f = 0; f < cellList.GetLength(0); f++)
             {
-                Debug.Write("\n");
+                Debug.Write("\n\n");
                 //X
                 for (int i = 0; i < cellList.GetLength(1); i++)
                 {
+                    Debug.Write("[");
                     if (cellList[i,f].GetMat())
                     {
-                        Debug.Write("[*]");
+                        Debug.Write(" * ");
                     }
                     else if (thisPlayer.GetX() == i && thisPlayer.Gety() == f)
                     {
-                        Debug.Write(" ^^");
+                        Debug.Write("<3 ");
+                    }
+
+                    else if (cellList[i, f].GetPlayer() > -1)
+                    {
+                        Debug.Write(" " + cellList[i, f].GetPlayer() + " ");
                     }
                     else if (cellList[i, f].GetisUnitPresent())
                     {
-                        Debug.Write(" <3");
+                        Debug.Write("^-^");
                     }
                     else
                     {
-                        Debug.Write(" []");
+                        Debug.Write("   ");
                     }
+                    Debug.Write("]");
 
                 }
             }
@@ -1103,13 +1322,14 @@ namespace DoomCloneV2
                             Debug.WriteLine("Player is "+ String.Format("{0:00}",this.playerID));
                             Debug.WriteLine("Gun Damage is " + String.Format("{0:0000}", thisPlayer.GetGunDamage()));
                             Debug.WriteLine("Enemy index i is " + String.Format("{0:000}",i));
+                            Debug.WriteLine("Those 3 things together are " + String.Format("{0:000}", i)+"-" + String.Format("{0:00}", this.playerID) +"-"+ String.Format("{0:0000}", thisPlayer.GetGunDamage()));
                             if (Globals.SinglePlayer)
                             {
-                                AddToCommandString("SHE"+String.Format("{0:000}00{0:0000}",i,thisPlayer.GetGunDamage()));
+                                AddToCommandString("SHE"+String.Format("{0:000}00{1:0000}",i,thisPlayer.GetGunDamage()));
                             }
                             else
                             {
-                                this.thisClient.Write("SHE" + String.Format("{0:000}{0:00}{0:0000}", i,thisClient.GetID(), thisPlayer.GetGunDamage()));
+                                this.thisClient.Write("SHE" + String.Format("{0:000}", i) + String.Format("{0:00}", this.playerID) + String.Format("{0:0000}", thisPlayer.GetGunDamage()));
                             }
                            // unitClicked.DealDamage(thisPlayer.GetGunDamage());
                         }
@@ -1168,7 +1388,15 @@ namespace DoomCloneV2
         {
             if (cursorUp)
             {
-                CursorHandler();
+                if (e.Button == MouseButtons.Right)
+                {
+                    cursorUp = false;
+                }
+                else
+                {
+
+                    CursorHandler();
+                }
             }
             else
             {

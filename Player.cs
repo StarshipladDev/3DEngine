@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,16 +13,44 @@ namespace DoomCloneV2
     {
         private int xPos { get; set; }
         private int yPos { get; set; }
+        private int playerID = 0;
         private Gun playerGun;
         public Directions dir = Directions.UP;
         public Bitmap playerView;
+        public int health = 20;
+        bool dead = false;
 
-        public Player(int x, int y, int gunType)
+        public Player(int x, int y, int gunType,int iD)
         {
             CreateGun();
             this.yPos = y;
             this.xPos = x;
+            this.playerID = iD;
 
+        }
+        public void doDamage(int damage)
+        {
+            this.health -= damage;
+            if (this.health < 1)
+            {
+                this.dead = true;
+                this.health = 0;
+
+                Debug.Write("PLAYER:" + "Took damage, health is " + this.health + ", dead is " + this.IsDead());
+            }
+            
+        }
+        public bool IsDead()
+        {
+            return this.dead;
+        }
+        public void SetID(int id)
+        {
+            this.playerID = id;
+        }
+        public int GetPlayerID()
+        {
+            return this.playerID;
         }
         private void CreateGun()
         {
@@ -77,6 +106,14 @@ namespace DoomCloneV2
         {
             this.xPos = i;
             return xPos;
+        }
+        public void SetDirection(Directions dir)
+        {
+            this.dir = dir;
+        }
+        public Directions GetDirection()
+        {
+            return this.dir;
         }
         public void ChangeDirection(String direction)
         {

@@ -24,11 +24,13 @@ namespace DoomCloneV2
         public static bool drawFill = true;
         public static bool drawText = true;
         public static bool drawn = true;
+        public static bool Pause = false;
         public static bool pauseForInfo = false;
         public const int maxView = 20;
         public const int cellSize = 20;
         //Draw directin /Drew gun //Turn gun back //draw client confirm //draw server confirm //Draw message //Draw Server receive
         public static bool[] flags = new bool[7];
+        //Base animaions
         public static int[] animations = new int[5];
         public static bool readyToDraw = true;
         public static string Message = String.Empty;
@@ -39,6 +41,7 @@ namespace DoomCloneV2
         public const int MAXFRAMES = 8;
         public const int INTERVALTIMEMILISECONDS = 1000 / 5;
         public const int MaxPossibleDepth = 20;
+        public static int ticks = 0;
 
         /// <summary>
         /// Stolen from https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp 04/03/2020
