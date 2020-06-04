@@ -29,23 +29,23 @@ progress and follow better SDLC practice.
 ![DoomClone](ColorCellEnemiesGun.PNG)
 ## Latest Build
 
-21/04/2020 - 0.01a- Initial Build
+05/06/2020 - 0.02a- Friendship Build
 
 ## Latest Update
 
-16/05/2020 - Synced worlds over networks, synced damage models
+05/06/202 - Friendship build released
 
 ## Next Build
 
-Week ending 31/05/2020 - Friendship Build
+Week ending 26/07/2020 - Gameplay Build
 
-* TCP Multiplayer
+* Map generation
 
-* Animations
+* Rehaul of weapon System
 
-*Simple Combat System
+* More enemies & Combat interactions
 
-*Merge current 3 branches (Master,TCP,Animation)
+*Full documentation & display controls
 
 ## Skill developing
 
