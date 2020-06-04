@@ -1,1 +1,8 @@
+Resources
 Resources/*
+bin/Release
+bin/Release/*
+Changes.txt
+obj
+obj/*
+.vs
