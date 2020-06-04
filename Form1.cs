@@ -6,90 +6,64 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
+using System.Xml;
 
 namespace DoomCloneV2
 {
- /**
-  * Globals is a static/constant class used to convey information between listeners and the main form while the application runs.
-  * 
-  */
-    public static class Globals
-    {
-        public static bool drawGun = true;
-        public static bool drawLines = true;
-        public static bool drawFill = true;
-        public const int maxView = 20;
-        public const int cellSize = 20;
-        //Draw directin /Drew gun //Turn gun back
-        public static bool[] flags = new bool[5];
-        public static int[] animations = new int[5];
-        public static bool readyToDraw = true;
-        public const int MAXFRAMES=8;
-        public const int INTERVALTIMEMILISECONDS = 1000;
-        public const int MaxPossibleDepth =20;
-
-        /// <summary>
-        /// Stolen from https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp 04/03/2020
-        /// Resize the image to the specified width and height.
-        /// </summary>
-        /// <param name="image">The image to resize.</param>
-        /// <param name="width">The width to resize to.</param>
-        /// <param name="height">The height to resize to.</param>
-        /// <returns>The resized image.</returns>
-        public static Bitmap ResizeImage(Image image, int width, int height)
-        {
-            var destRect = new Rectangle(0, 0, width, height);
-            var destImage = new Bitmap(width, height);
-
-            destImage.SetResolution(image.HorizontalResolution, image.VerticalResolution);
-
-            using (var graphics = Graphics.FromImage(destImage))
-            {
-                graphics.CompositingMode = CompositingMode.SourceCopy;
-                graphics.CompositingQuality = CompositingQuality.HighQuality;
-                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                graphics.SmoothingMode = SmoothingMode.HighQuality;
-                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-                using (var wrapMode = new ImageAttributes())
-                {
-                    wrapMode.SetWrapMode(WrapMode.TileFlipXY);
-                    graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
-                }
-            }
-
-            return destImage;
-        }
-    }
     /// <summary>
     /// Form1 is the Primary form component that runs when openeing the .exe
     /// </summary>
     public partial class Form1 : Form
     {
+        int playerID = 0;
         Cell[,] cellList = new Cell[Globals.cellSize, Globals.cellSize];
-        Player thisPlayer = new Player(4,4,1);
+        Player thisPlayer = new Player(4,4,1,0);
+        CursorObject cursor = null;
+        List<Player> players = new List<Player>();
         Directions switcher;
         System.Timers.Timer aTimer;
-        
+        int shotsFired=0;
+        bool server = false;
+        bool cursorUp = false;
+        Client thisClient = null;
         List<Unit> units = new List<Unit>();
+        List<Unit> playerUnits = new List<Unit>();
+        String commandString = String.Empty;
+        String commandStringsNew = String.Empty;
+        Color ColorFloor;
+        Color ColorRoof;
         /// <summary>
         /// This constructor creates a Form. Parameters should be specified in <see cref="Globals"/>
         /// </summary>
         public Form1()
         {
-            for(int i=0; i < Globals.animations.Length; i++)
+            ReadConfig();
+            playerUnits.Add(null);
+            players.Add(thisPlayer);
+            thisPlayer = players[0];
+            //this.SetStyle(ControlStyles.OptimizedDoubleBuffer,true);
+            //this.SetStyle(ControlStyles.AllPaintingInWmPaint, true);
+            //this.SetStyle(ControlStyles.UserPaint, true);
+            for (int i=0; i < Globals.animations.Length; i++)
             {
                 Globals.animations[i] = 0;
             }
+            for (int i = 0; i < Globals.flags.Length; i++)
+            {
+                Globals.flags[i] = false;
+            }
             thisPlayer.playerView = Globals.ResizeImage(thisPlayer.playerView, this.Width, this.Height);
             Random rand = new Random();
-            Color ColorRoof = Color.FromArgb(150, rand.Next(255), rand.Next(255), rand.Next(255));
+            ColorFloor = Color.FromArgb(150, 255,200,0);
+            ColorRoof = Color.FromArgb(50, rand.Next(50), 255, rand.Next(50));
             //Y
             for (int i = 0; i < cellList.GetLength(0); i++)
             {
@@ -103,8 +77,6 @@ namespace DoomCloneV2
                     }
                     else
                     {
-
-                        Color ColorFloor = Color.FromArgb(150, rand.Next(255), rand.Next(155)+100-rand.Next(100), rand.Next(255));
                         cellList[i, f] = new Cell(false, Color.FromArgb(0, 0, 0, 0),ColorFloor,ColorRoof);
                     }
                     
@@ -122,7 +94,7 @@ namespace DoomCloneV2
                 {
                     if (! cellList[xForBlock, yForBLock].GetisUnitPresent())
                     {
-                        units.Add(cellList[xForBlock, yForBLock].createUnit(new Bitmap("Resources/Images/DevilSuit.png"),new Bitmap("Resources/Images/DevilSuit_Dead.png")));
+                        units.Add(cellList[xForBlock, yForBLock].createUnit(xForBlock, yForBLock, new Bitmap("Resources/Images/Enemy/Devil/Devil_Idle.png"),new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
                     }
                 }
             }
@@ -130,6 +102,38 @@ namespace DoomCloneV2
             //Print Cell
             PrintMap();
             InitializeComponent();
+        }
+        private void AddToCommandString(String s)
+        {
+            this.commandString += s + "^";
+        }
+        public static void ReadConfig()
+        {
+            try
+            {
+
+                FileStream configFile = File.OpenRead("config.xml");
+                long configFileContentsLength = configFile.Length;
+                Byte[] configFileContentsByte = new Byte[configFileContentsLength];
+                configFile.Read(configFileContentsByte, 0, (int)configFileContentsLength);
+                String configFileContents = Encoding.ASCII.GetString(configFileContentsByte);
+                Debug.WriteLine(configFileContents);
+                configFile.Close();
+                XmlDocument configXml = new XmlDocument();
+                configXml.InnerXml = configFileContents;
+                Debug.WriteLine("Port is :"+configXml.SelectSingleNode("Config/Port").InnerText);
+                Debug.WriteLine("Address is :" + configXml.SelectSingleNode("Config/ServerAddress").InnerText);
+                Debug.WriteLine("Address is :" + configXml.SelectSingleNode("Config/ClientName").InnerText);
+                Globals.port = configXml.SelectSingleNode("Config/Port").InnerText;
+                Globals.Address = configXml.SelectSingleNode("Config/ServerAddress").InnerText;
+                Globals.clientName= configXml.SelectSingleNode("Config/ClientName").InnerText;
+
+
+            }
+            catch(Exception e)
+            {
+                Debug.WriteLine("Error getting Config");
+            }
         }
         /// <summary>
         /// TimerCall is the eventlistener that runs every 'tick', that occurs every 'INTERVALTIMEMILISECONDS', specified in <see cref="Globals"/>
@@ -141,6 +145,11 @@ namespace DoomCloneV2
             Globals.animations[0]++;
             if (Globals.animations[0] == Globals.MAXFRAMES){
                 Globals.animations[0] = 0;
+            }
+            Globals.ticks++;
+            if (Globals.ticks == 10000)
+            {
+                Globals.ticks = 0;
             }
             this.Invalidate();
         }
@@ -165,176 +174,741 @@ namespace DoomCloneV2
         {
             if (Globals.readyToDraw)
             {
+
                 Globals.readyToDraw = false;
-                this.FormUpdate(true);
                 base.OnPaint(e);
+                this.FormUpdate(true,e.Graphics);
                 Globals.readyToDraw = true;
             }
         }
         /// <summary>
         /// FormUpdate is used to perform the graphical calcualtiosn for where various objects will appear on the screen, and call their
-        /// respective drawing functions in order
+        /// respective drawing functions in order.
+        /// Commands must be added as a list from inside
         /// </summary>
         /// <param name="unitsa">Whether to draw non-cell specfic items (Such as units or player views)</param>
-        private void FormUpdate(bool unitsa = false)
+        /// 
+        ///LIST OF COMMNAD TYPES
+        ///
+        /// ----
+        ///MV -Move
+        ///MVP - Move Player - MVP[00PlayerID][ch(1) Direction]{'F'-Foward,'B'-Back,'L'-Left,'R'-Right}
+        ///
+        /// ----
+        ///DI - Direction
+        ///DIP - Change Player Direction - DIP[00PlayerID][ch(1)]{'L'-Left,'R'-Right}
+        ///
+        /// 
+        ///------
+        ///SH - Deal Damage
+        ///SHE - Shoot Enemy SHE[000 EnemyIndex][00 Palyer ID][0000 Damage]
+        ///SHP - Deal Damage To Player -SHP[000 PlayerIndex][000 Damage]
+        ///
+        /// ------
+        ///SE - Set GameWorld
+        ///SEP - Set Player-SEP[00 PlayerID][000 Player X Position][000 Player Y Position][char(1) Player direction] - Creates Player of set ID at set co-ords
+        ///SEW - Set World Block - SEW([000 BlockType][000 X Pos][000 Y Pos] x GLobals.MaxCell)- Creates Block of type 't' at location 'x','y'
+        ///SEE - Set Enemy - SEE[000 Enemy Type][000 X Pos][000 Y Pos][0000 Deal Damage] - Places enemy and deals damage
+        ///
+        ///-------
+        ///PR- Print
+        ///PRT - Print Text - PRT[MessageString]
+        ///
+        ///--------
+        ///DEL-Delete all Client Players
+        ///DAL- Let CLient Draw AGain
+        ///
+        ///--------
+        /// CR- Create
+        /// CRP - Create Projectile- CRE[000 Projectile Type][000 000EnemyID][000 000Target X,Y]
+        /// 
+        ///
+        ///---------
+        ///RP= Run Projectiles
+        /// RPR - Run Projectile -RPR[000]EnemyIdPrjecticleCount][000 EnemyId][000 Projectile ID]- Runs stated projectile's 'RunProjectile' function.
+        ///
+        ///
+        private void RunCommands()
         {
-            this.Update();
-            //Graphics g = Graphics.FromImage(new Bitmap(this.Width,this.Height));
-            Graphics g = this.CreateGraphics();
-            for (int i = 0; i < units.Count; i++)
+
+
+            if (server || Globals.SinglePlayer)
             {
-                units[i].bottomRight = new Point(-1, -1);
-                units[i].topLeft = new Point(-1, -1);
-            }
-            //GetTargetBlockViaDirection
-            bool playerVerticalDirection = false;
-            if (thisPlayer.dir == Directions.UP || thisPlayer.dir == Directions.DOWN)
-            {
-                playerVerticalDirection = true;
-            }
-            int offset = 0;
-            if (playerVerticalDirection)
-            {
-                offset = thisPlayer.GetX();
-            }
-            else
-            {
-                offset = thisPlayer.Gety();
-            }
-            int maxDepth = GetMaxDepth();
-            int loopFromBack = 0;
-            while (loopFromBack < maxDepth)
-            {
-               
-                int loopFromLeft = /*targetbase*/0;
-                int scanAcrossMax = ((maxDepth - loopFromBack)*2) + 1;
-                int halfScan = maxDepth - loopFromBack;
-                while (loopFromLeft <scanAcrossMax /*baselineTargetSquare*/)
+                if (Globals.ticks % (Globals.MAXFRAMES) == 0)
                 {
+
+                    for (int i = 0; i < units.Count; i++)
                     {
-                        int screenHeight = this.Height;
-                        int screenWidth = this.Width;
-                        //Create centreLine)
-
-                        int centreLine=1;
-                        //left
-                        if (loopFromLeft< halfScan)
+                        if (units[i].projs.Count > 0)
                         {
-                            centreLine = 0;
-                        }
-                        //right
-                        else if (loopFromLeft > halfScan)
-                        {
-                            centreLine = 2;
-                        }
-                        int pickX = 0;
-                        int pickY = 0;
-                        bool matToLeft = false;
-                        if (thisPlayer.dir == Directions.UP)
-                        {
-                            pickX = (offset - halfScan) + loopFromLeft;
-                            pickY = thisPlayer.Gety() + 1 - (maxDepth - loopFromBack);
-                        }
-                        else if (thisPlayer.dir == Directions.DOWN)
-                        {
-                            pickX = (offset + halfScan) - loopFromLeft;
-                            pickY = (thisPlayer.Gety() - 1) + (maxDepth - loopFromBack);
-                        }
-                        else if (thisPlayer.dir == Directions.LEFT)
-                        {
-                            pickY = (offset + halfScan) - loopFromLeft;
-                            pickX = (thisPlayer.GetX() + 1) - (maxDepth - loopFromBack);
-                        }
-                        else if (thisPlayer.dir == Directions.RIGHT)
-                        {
-                            pickY = (offset - halfScan) + loopFromLeft;
-                            pickX = thisPlayer.GetX() - 1 - (maxDepth - loopFromBack);
-                        }
-                        if(pickX>=0 && pickX<cellList.GetLength(0) && pickY>=0 && pickY < cellList.GetLength(1))
-                        {
-                            //if (cellList[pickX,pickY].GetisUnitPresent()== unitsa)
+                            String commander = "RPR" + String.Format("{0:000}", units[i].projs.Count);
+                            for (int f = 0; f < units[i].projs.Count; f++)
                             {
-                                bool MatFront = false;
-                                if (loopFromBack == maxDepth - 1 && loopFromLeft == 1 && cellList[pickX, pickY].GetMat())
-                                {
-                                    MatFront = true;
-                                }
-                                if (thisPlayer.dir == Directions.UP && pickX > 0 && centreLine == 2)
-                                {
-                                    if /*(cellList[pickX - 1, pickY].GetisUnitPresent() || */(cellList[pickX - 1, pickY].GetMat())
-                                    {
-                                        matToLeft = true;
-                                    }
-                                }
-                                else if (thisPlayer.dir == Directions.DOWN && pickX < cellList.GetLength(0) - 1 && centreLine == 2)
-                                {
-                                    if /*(cellList[pickX + 1, pickY].GetisUnitPresent() ||*/(cellList[pickX + 1, pickY].GetMat())
-                                    {
-                                        matToLeft = true;
-                                    }
-                                }
-                                else if (thisPlayer.dir == Directions.LEFT && pickY > 0 && centreLine == 2)
-                                {
-                                    if /*(cellList[pickX, pickY + 1].GetisUnitPresent() || */(cellList[pickX, pickY + 1].GetMat())
-                                    {
-                                        matToLeft = true;
-                                    }
-                                }
-                                else if (thisPlayer.dir == Directions.RIGHT && pickY < cellList.GetLength(0) - 1 && centreLine == 2)
-                                {
-                                    if /*(cellList[pickX, pickY - 1].GetisUnitPresent() || */(cellList[pickX, pickY - 1].GetMat())
-                                    {
-                                        matToLeft = true;
-                                    }
-                                }
-                                cellList[pickX, pickY].Draw(g, centreLine, loopFromBack, loopFromLeft, maxDepth, screenWidth, screenHeight, Globals.drawLines, matToLeft, MatFront);
-                            }
-                           
-                        }
 
+                                commander += String.Format("{0:000}{1:000}", i, f);
+
+
+                            }
+
+                            if (Globals.SinglePlayer)
+                            {
+                                AddToCommandString(commander);
+                            }
+                            else
+                            {
+                                this.thisClient.Write(commander);
+                            }
+                        }
+                        
                     }
-                    loopFromLeft++;
+                }
+                /*
+             * Projectile implementation
+             * */
+                if (Globals.ticks % (Globals.MAXFRAMES * 4) == 0)
+                {
+
+                    Random rand = new Random();
+                    int playerNum = rand.Next(players.Count);
+                    int unitNum = rand.Next(units.Count);
+                    if (rand.Next(10) > 1 && units[unitNum].alive)
+                    {
+                        if (!Globals.SinglePlayer)
+                        {
+                            this.thisClient.Write("CRP" + String.Format("{0:000}{1:000}{2:000}", unitNum, players[playerNum].GetX(), players[playerNum].Gety()));
+
+                        }
+                        else
+                        {
+                            AddToCommandString("CRP" + String.Format("{0:000}{1:000}{2:000}", unitNum, players[playerNum].GetX(), players[playerNum].Gety()));
+                        }
+                    }
+
+                }
+                
+            }
+            
+            String h = commandString;
+            if (!Globals.SinglePlayer && thisClient != null)
+            {
+                //h = String.Empty;
+                lock (thisClient)
+                {
+                    h = thisClient.GetCommands();
+                }
+            }
+            h += this.commandStringsNew;
+            this.commandStringsNew = String.Empty;
+            if (h != String.Empty)
+            {
+                Debug.WriteLine("Running commands :" + h);
+                String[] commands = h.Split('^');
+                for (int i = 0; i < commands.Length; i++)
+                {
+
+                    Debug.Write(" Command:'" + commands[i] + "'");
+                    if (commands[i].Length>2)
+                    {
+                       // Debug.WriteLine("Reading Command '"+ commands[i]+"'");
+
+                        Debug.WriteLine("After trim command is :'" + commands[i].Trim() + "'");
+                        commands[i] = commands[i].Trim();
+                        switch (commands[i].Substring(0, 3))
+                        {
+                            //
+                            //MOVE PLAYER
+                            //
+                            case "MVP":
+                                int x = Int32.Parse(commands[i].Substring(3, 2));
+                                int oldx = players[x].GetX();
+                                int oldy = players[x].Gety();
+                                Debug.WriteLine(" Moving Player " + x +String.Format(" From {0},{0} ", oldx,oldy ));
+                                if (x > -1 && x<players.Count)
+                                {
+                                    char directionChar= Char.Parse(commands[i].Substring(5, 1));
+                                    switch(directionChar)
+                                    {
+                                        case 'F':
+                                            Move("Forward", players[x]);
+                                            break;
+                                        case 'B':
+                                            Move("Back", players[x]);
+                                            break;
+                                        case 'L':
+                                            Move("Left", players[x]);
+                                            break;
+                                        case 'R':
+                                            Move("Right", players[x]);
+                                            break;
+                                    }
+                                    Debug.WriteLine(String.Format("To  {0},{1}.", players[x].GetX(), players[x].Gety()));
+                                    if (x != playerID)
+                                    {
+                                        Debug.WriteLine("Removing player on " + oldx + "," + oldy + ", setting new player on" + players[x].GetX() + "," + players[x].Gety()) ;
+                                        cellList[oldx, oldy].RemoveUnit();
+                                        playerUnits[x] = (cellList[players[x].GetX(), players[x].Gety()].createUnit(players[x].GetX(), players[x].Gety(),new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
+                                        if (cellList[oldx, oldy].GetisUnitPresent())
+                                        {
+                                            Debug.WriteLine("There IS a unit on the old coords "+oldx+","+oldy);
+                                        }
+                                        if (cellList[players[x].GetX(), players[x].Gety()].GetisUnitPresent())
+                                        {
+                                            Debug.WriteLine("There IS a unit on the new coords " + oldx + "," + oldy);
+                                        }
+                                    }
+                                }
+                                
+                                break;
+                            case "RPR":
+                                
+                                int projCount = Int32.Parse(commands[i].Substring(3, 3));
+                                Debug.WriteLine(" Firing "+ projCount+" Projectile's ");
+
+                                for (int projCounter = 0; projCounter < projCount; projCounter++)
+                                {
+                                    Debug.WriteLine("------FIRING PROJECTILE--------");
+
+                                    int unitNumber = Int32.Parse(commands[i].Substring((projCounter * 6) + 6, 3));
+                                    if (units[unitNumber].projs.Count <= projCounter)
+                                    {
+                                        Debug.WriteLine("Unit had less projectiles than counter, ending");
+                                        break;
+                                    }
+                                    int damage = units[unitNumber].projs[projCounter].GetDamage();
+
+                                    int returnCode = units[unitNumber].projs[projCounter].RunProjecticle(this.cellList);
+                                    Debug.WriteLine("Form1: Fireball returncode is :" + returnCode);
+
+                                    if (returnCode > -2)
+
+                                    {
+                                        Debug.WriteLine("Fireball hit something with returnCode" + returnCode);
+                                        units[unitNumber].projs.RemoveAt(projCounter);
+                                        projCounter--;
+
+                                    }
+                                    if (returnCode > -1)
+                                    {
+                                        Debug.WriteLine("Fireball hit player "+returnCode);
+                                        String ProjectileHitString = "SHP" + String.Format("{0:000}{1:000}", returnCode, damage);
+                                        if (!Globals.SinglePlayer && server)
+                                        {
+                                            Debug.WriteLine("Server sending " + ProjectileHitString);
+                                            this.thisClient.Write(ProjectileHitString);
+
+                                        }
+                                        if (Globals.SinglePlayer)
+                                        {
+                                            Debug.WriteLine("SinglePlayer sending " + ProjectileHitString);
+                                            commandStringsNew += ProjectileHitString;
+                                            Debug.WriteLine("Comand last idnex now "+commandString);
+                                        }
+                                    }
+                                    Debug.WriteLine("------END FIRING PROJECTILE--------");
+                                }
+                                
+                                break;
+                            case "DIP":
+                                int id = Int32.Parse(commands[i].Substring(3, 2));
+                                if (id > -1 && id < players.Count)
+                                {
+                                    char directionChar = Char.Parse(commands[i].Substring(5, 1));
+                                    Debug.WriteLine("Rotating Player " + id + " " + directionChar);
+                                    switch (directionChar)
+                                    {
+                                        case 'L':
+                                            players[id].ChangeDirection("Left");
+                                            break;
+                                        case 'R':
+                                            players[id].ChangeDirection("Right");
+                                            break;
+                                    }
+                                }
+                                break;
+                            case "SHP":
+                                Debug.WriteLine("------DEALING DAMAGE TO PLAYER--------");
+                                int playerHit = Int32.Parse(commands[i].Substring(3, 3));
+                                int damageToPlayer = Int32.Parse(commands[i].Substring(6, 3));
+                                Debug.WriteLine("Dealing damage to player" + playerHit);
+                                players[playerHit].doDamage(damageToPlayer);
+                                if (players[playerHit].IsDead())
+                                {
+                                    if (playerHit != playerID)
+                                    {
+                                        Debug.WriteLine("Player " + playerHit + " Died");
+                                        playerUnits[playerHit].Kill();
+                                    }
+                                }
+                                Debug.WriteLine("Player " + playerHit + " health is " + players[playerHit].health);
+                                Debug.WriteLine("------DEALING DAMAGE TO PLAYER--------");
+
+                                break;
+                            //
+                            //PRINT VALUE
+                            //
+                            case "PRT":
+                                Debug.Write("Printing ");
+                                if (commands[i].Length > 1)
+                                {
+                                    Globals.flags[5] = true;
+                                    Globals.Message = commands[i].Substring(1, commands[i].Length - 1);
+                                    Debug.Write(commands[i].Substring(1, commands[i].Length - 1));
+                                }
+                                break;
+                                //Connect
+                            case "COC":
+                                //
+                                //NEW PLAYER ADDED - SERVER HANDLING
+                                //
+                                if (server)
+                                {
+                                    Globals.Pause=true;
+                                    Thread.Sleep(2000);
+                                    Debug.WriteLine("Performing ServerClient Connection Request by making new player");
+                                    players.Add(new Player(5 + players.Count, 5 + players.Count, 1,players.Count-1));
+                                    playerUnits.Add(cellList[5 + players.Count - 1, 5 + players.Count - 1].createUnit(5 + players.Count - 1, 5 + players.Count - 1, new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
+                                    Debug.WriteLine("ServerClient: Messaging out New Players. There are " + players.Count + " players");
+                                    thisClient.Write("DEL");
+                                    ///SEP - Set Player-SEP[00 PlayerID][000 Player X Position][000 Player Y Position] - Creates Player of set ID at set co-ords
+                                    ///SEW - Set World Block - SEW[000 BlockType][000 X Pos][000 Y Pos] - Creates Block of type 't' at location 'x','y'
+                                    ///SEE - Set Enemy - SEE[000 Enemy Type][000 X Pos][000 Y Pos][0000 Deal Damage] - Places enemy and deals damage
+
+                                    ///Delete All Projectiles before sending data
+                                    for (int r = 0; r < units.Count; r++)
+                                    {
+                                        if (units[r].projs.Count > 0)
+                                        {
+                                            for (int t = 0; t < units[r].projs.Count; t++)
+                                            {
+                                                cellList[units[r].projs[t].x, units[r].projs[t].y].RemoveProjecticle();
+                                                units[r].projs.RemoveAt(t);
+                                                t--;
+
+                                            }
+                                        }
+
+                                    }
+                                    ///End deleting all data before firing projectiles
+                                    for (int f = 0; f < Globals.cellSize; f++)
+                                    {
+                                        String builder = "SEW";
+                                        for (int z = 0; z < Globals.cellSize; z++)
+                                        {
+                                            builder += String.Format("{0:000}", cellList[f, z].GetCellType()) + String.Format("{0:000}", f) + String.Format("{0:000}", z);
+                                        }
+                                        thisClient.Write(builder);
+                                    }
+                                    for (int f = 0; f < units.Count; f++)
+                                    {
+                                        String builder = "SEE";
+                                        builder += "001";
+                                        builder += String.Format("{0:000}", units[f].x);
+                                        builder += String.Format("{0:000}", units[f].y);
+                                        if (units[f].alive)
+                                        {
+                                            builder += String.Format("{0:0000}",0);
+                                        }
+                                        else
+                                        {
+
+                                            builder += String.Format("{0:0000}",20);
+                                        }
+                                        thisClient.Write(builder);
+                                    }
+                                    for (int f = 0; f < players.Count; f++)
+                                    {
+                                        char directionOfPlayer = 'U';
+                                        int playerID = f;
+                                        int playerx = players[playerID].GetX();
+                                        int playery = players[playerID].Gety();
+                                        Directions d = players[playerID].GetDirection();
+                                        switch (d)
+                                        {
+                                            case Directions.DOWN:
+                                                directionOfPlayer = 'D';
+                                                break;
+                                            case Directions.UP:
+                                                directionOfPlayer = 'U';
+                                                break;
+                                            case Directions.LEFT:
+                                                directionOfPlayer = 'L';
+                                                break;
+                                            case Directions.RIGHT:
+                                                directionOfPlayer = 'R';
+                                                break;
+                                        }
+                                        Debug.WriteLine(this.thisClient.GetName() + ": Created new player @ " + playerx + "," + playery + " via serverClient");
+                                        thisClient.Write("SEP" + String.Format("{0:00}", playerID) + String.Format("{0:000}", playerx) + String.Format("{0:000}", playery)+ directionOfPlayer);
+
+                                    }
+                                    thisClient.Write("DAL");
+                                    Globals.Pause = false;
+                                }
+                                break;
+                            case "SEW":
+                                if (!server)
+                                {
+                                    for (int z = 0; z < Globals.cellSize; z++)
+                                    {
+                                        // Debug.WriteLine("Command length is "+commands[i].Length);
+                                        // Debug.WriteLine("accessing "+ ((z * 9) + 3)+" that is "+ commands[i].Substring(((z * 9) + 3), 3));
+                                        int cellType = Int32.Parse(commands[i].Substring(((z * 9) + 3), 3));
+                                        //  Debug.WriteLine("accessing " + ((z * 9) + 6) + " that is " + commands[i].Substring(((z * 9) + 6), 3));
+                                        int cellx = Int32.Parse(commands[i].Substring(((z * 9) + 6), 3));
+                                        //  Debug.WriteLine("accessing " + ((z * 9) + 9) + " that is " + commands[i].Substring(((z * 9) + 9), 3));
+                                        int celly = Int32.Parse(commands[i].Substring(((z * 9) + 9), 3));
+                                        cellList[cellx, celly] = new Cell(false, Color.FromArgb(0, 0, 0, 0), ColorFloor, ColorRoof);
+                                        if (cellType == 1)
+                                        {
+                                            cellList[cellx, celly].setMat(true, Color.Black);
+                                        }
+                                    }
+                                }
+                            break;
+                            case "CRP":
+                                int unitID = Int32.Parse(commands[i].Substring(3, 3));
+                                int targetX = Int32.Parse(commands[i].Substring(6, 3));
+                                int targetY = Int32.Parse(commands[i].Substring(9, 3));
+                                units[unitID].CreateProjectile("Fireball", targetX, targetY);
+                                break;
+                            case "SEE":
+                                if (!server)
+                                {
+                                    int enemyType = Int32.Parse(commands[i].Substring(3, 3));
+                                    int enemyX = Int32.Parse(commands[i].Substring(6, 3));
+                                    int enemyY = Int32.Parse(commands[i].Substring(9, 3));
+                                    int enemyDam = Int32.Parse(commands[i].Substring(12, 4));
+                                    String enemyAlive = "None";
+                                    String enemyDead = "None";
+                                    switch (enemyType)
+                                    {
+                                        case (1):
+                                            enemyAlive = "Resources/Images/Enemy/Devil/Devil_Idle.png";
+                                            enemyDead = "Resources/Images/Enemy/Devil/Devil_Death.png";
+                                            break;
+                                    }
+                                    units.Add(cellList[enemyX, enemyY].createUnit(enemyX, enemyY, new Bitmap(enemyAlive), new Bitmap(enemyDead)));
+                                    units[units.Count - 1].DealDamage(enemyDam);
+                                    Debug.WriteLine("");
+                                }
+                                
+                                break;
+                            case "COP":
+                                Debug.WriteLine(thisClient.GetName() + ":ClientID is " + thisClient.GetID());
+                                Debug.WriteLine(thisClient.GetName() + ":Setting Client ID to  " + commands[i].Substring(3, 2));
+                                if (thisClient.GetID() == -1)
+                                {
+                                    thisClient.SetID(Int32.Parse(commands[i].Substring(3, 2)));
+                                    this.playerID = Int32.Parse(commands[i].Substring(3, 2));
+                                }
+                                else
+                                {
+                                    Globals.flags[6] = true;
+                                    Globals.ServerMessage = "ID already set";
+                                    Debug.WriteLine(thisClient.GetName() + ":ID already set to" + thisClient.GetID());
+                                }
+                                break;
+                                //DealDamageTOEnemy
+                            case "SHE":
+                                int shootingPlayer = Int32.Parse(commands[i].Substring(6, 2));
+                                int enemyIndex = Int32.Parse(commands[i].Substring(3, 3));
+                                int damageDone = Int32.Parse(commands[i].Substring(8, 4));
+                                this.units[enemyIndex].DealDamage(damageDone);
+                                break;
+                            //
+                            //SET UP CLIENT WORLD DETAILS
+                            //
+                            case "SEP":
+
+                                if (!Globals.SinglePlayer && !server)
+                                {
+                                    int playerID1 = Int32.Parse(commands[i].Substring(3,2));
+                                    int playerx1 = Int32.Parse(commands[i].Substring(5, 3));
+                                    int playery1 = Int32.Parse(commands[i].Substring(8, 3));
+                                    char d = Char.Parse(commands[i].Substring(11,1));
+                                Globals.Message = "Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count;
+                                    Debug.WriteLine("Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count);
+                                    if (this.players.Count == playerID1)
+                                    {
+                                        this.players.Add(new Player(playerx1, playery1, 1,playerID1));
+                                        Directions dir=Directions.NULL;
+                                        switch (d)
+                                        {
+                                            case 'D':
+                                                dir = Directions.DOWN;
+                                                break;
+                                            case 'U':
+                                                dir = Directions.UP;
+                                                break;
+                                            case 'L':
+                                                dir = Directions.LEFT;
+                                                break;
+                                            case 'R':
+                                                dir = Directions.RIGHT;
+                                                break;
+                                        }
+                                        players[playerID1].SetDirection(dir);
+                                        if (this.playerID!=-1 && this.playerID != playerID1)
+                                        {
+                                            Globals.flags[5] = true;
+                                            playerUnits.Add(cellList[playerx1, playery1].createUnit(playerx1, playery1,new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
+                                            cellList[playerx1, playery1].SetPlayer(players[playerID1].GetPlayerID());
+                                            Debug.WriteLine(this.thisClient.GetName() + ": Created new player @ " + playerx1 + "," + playery1);
+                                        }
+                                    }
+                                    if (playerID != -1 && this.playerID == playerID1)
+                                    {
+                                        playerUnits.Add(null);
+                                        this.thisPlayer = this.players[this.playerID];
+                                        this.players[playerID1].SetID(this.playerID);
+                                        cellList[playerx1, playery1].SetPlayer(players[playerID1].GetPlayerID());
+                                    }
+                                }
+                                break;
+                            case "DEL":
+                                if (!server)
+                                {
+                                    //h = String.Empty;
+                                    Globals.pauseForInfo = true;
+                                    this.players.Clear();
+                                    this.units.Clear();
+                                    this.playerUnits.Clear();
+                                    this.cellList = new Cell[Globals.cellSize, Globals.cellSize];
+                                }
+                                break;
+                            case "DAL":
+                                if (!server)
+                                {
+                                    Globals.pauseForInfo = false;
+                                }
+                                break;
+                            default:
+                                Debug.WriteLine("Invalid command: '" + commands[i].Substring(0, 3) + "'");
+                                break;
+                        }
+                    }
                     
                 }
-                loopFromBack++;
             }
-            if (unitsa == false)
-            {
-                g.Dispose();
-                FormUpdate(true);
-            }
-            else
-            {
-                if (Globals.flags[0])
-                {
-                    Globals.flags[0] = false;
-                    g.DrawString("DrawingMap! ", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, this.Height / 2);
-                    g.DrawString("Your direction is : " + thisPlayer.dir, new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 20);
-
-
-                }
-                //DrawGunShooting
-                if (Globals.flags[1] == true)
-                {
-                    RefreshPlayerView(this.thisPlayer.GetPlayerGunShoot());
-                    Globals.flags[1] = false;
-                    Globals.flags[2] = true;
-                }
-                //Set gun back to normal
-                else if (Globals.flags[2] == true)
-                {
-                    RefreshPlayerView(this.thisPlayer.GetPlayerGun());
-                    Globals.flags[2] = false;
-                }
-                if (Globals.drawGun)
-                {
-                    g.DrawImage(thisPlayer.playerView, new Point(this.Width - thisPlayer.playerView.Width - 10, this.Height - thisPlayer.playerView.Height - 40));
-                }
-                g.Dispose();
-
-            }
-           
+            commandString = String.Empty;
         }
+            /// <summary>
+            /// FormUpdate is used to perform the graphical calcualtiosn for where various objects will appear on the screen, and call their
+            /// respective drawing functions in order
+            /// </summary>
+            /// <param name="unitsa">Whether to draw non-cell specfic items (Such as units or player views)</param>
+            private void FormUpdate(bool unitsa = false,Graphics e = null)
+            {
+                if (this.thisClient != null)
+                {
+                    this.playerID = thisClient.GetID();
+                }
+                RunCommands();
+
+                Bitmap n = new Bitmap(this.Width, this.Height);
+                Graphics g = Graphics.FromImage(n);
+
+                
+            if (!Globals.pauseForInfo)
+                {
+                        if (cursorUp)
+                    {
+                        //this.cursor.DebugPrint();
+                        this.cursor.MoveCursor();
+                    }
+                    for (int i = 0; i < units.Count; i++)
+                    {
+                        units[i].bottomRight = new Point(-1, -1);
+                        units[i].topLeft = new Point(-1, -1);
+                    }
+                    //GetTargetBlockViaDirection
+                    bool playerVerticalDirection = false;
+                    if (thisPlayer.dir == Directions.UP || thisPlayer.dir == Directions.DOWN)
+                    {
+                        playerVerticalDirection = true;
+                    }
+                    int offset = 0;
+                    if (playerVerticalDirection)
+                    {
+                        offset = thisPlayer.GetX();
+                    }
+                    else
+                    {
+                        offset = thisPlayer.Gety();
+                    }
+                    int maxDepth = GetMaxDepth();
+                    int loopFromBack = 0;
+                    while (loopFromBack < maxDepth)
+                    {
+               
+                        int loopFromLeft = /*targetbase*/0;
+                        int scanAcrossMax = ((maxDepth - loopFromBack)*2) + 1;
+                        int halfScan = maxDepth - loopFromBack;
+                        while (loopFromLeft <scanAcrossMax /*baselineTargetSquare*/)
+                        {
+                            {
+                                int screenHeight = this.Height;
+                                int screenWidth = this.Width;
+                                //Create centreLine)
+
+                                int centreLine=1;
+                                //left
+                                if (loopFromLeft< halfScan)
+                                {
+                                    centreLine = 0;
+                                }
+                                //right
+                                else if (loopFromLeft > halfScan)
+                                {
+                                    centreLine = 2;
+                                }
+                                int pickX = 0;
+                                int pickY = 0;
+                                bool matToLeft = false;
+                                if (thisPlayer.dir == Directions.UP)
+                                {
+                                    pickX = (offset - halfScan) + loopFromLeft;
+                                    pickY =( thisPlayer.Gety() + 1 )- (maxDepth - loopFromBack);
+                                }
+                                else if (thisPlayer.dir == Directions.DOWN)
+                                {
+                                    pickX = (offset + halfScan) - loopFromLeft;
+                                    pickY = (thisPlayer.Gety() - 1) + (maxDepth - loopFromBack);
+                                }
+                                else if (thisPlayer.dir == Directions.LEFT)
+                                {
+                                    pickY = (offset + halfScan) - loopFromLeft;
+                                    pickX = (thisPlayer.GetX() + 1) - (maxDepth - loopFromBack);
+                                }
+                                else if (thisPlayer.dir == Directions.RIGHT)
+                                {
+                                    pickY = (offset - halfScan) + loopFromLeft;
+                                    pickX = (thisPlayer.GetX() - 1 )+ (maxDepth - loopFromBack);
+                                }
+                                if(pickX>=0 && pickX<cellList.GetLength(0) && pickY>=0 && pickY < cellList.GetLength(1))
+                                {
+                                    //if (cellList[pickX,pickY].GetisUnitPresent()== unitsa)
+                                    {
+                                        bool MatFront = false;
+                                        if (loopFromBack == maxDepth - 1 && loopFromLeft == 1 && cellList[pickX, pickY].GetMat())
+                                        {
+                                            MatFront = true;
+                                        }
+                                        if (thisPlayer.dir == Directions.UP && pickX > 0 && centreLine == 2)
+                                        {
+                                            if /*(cellList[pickX - 1, pickY].GetisUnitPresent() || */(cellList[pickX - 1, pickY].GetMat())
+                                            {
+                                                matToLeft = true;
+                                            }
+                                        }
+                                        else if (thisPlayer.dir == Directions.DOWN && pickX < cellList.GetLength(0) - 1 && centreLine == 2)
+                                        {
+                                            if /*(cellList[pickX + 1, pickY].GetisUnitPresent() ||*/(cellList[pickX + 1, pickY].GetMat())
+                                            {
+                                                matToLeft = true;
+                                            }
+                                        }
+                                        else if (thisPlayer.dir == Directions.LEFT && pickY > 0 && centreLine == 2)
+                                        {
+                                            if /*(cellList[pickX, pickY + 1].GetisUnitPresent() || */(cellList[pickX, pickY + 1].GetMat())
+                                            {
+                                                matToLeft = true;
+                                            }
+                                        }
+                                        else if (thisPlayer.dir == Directions.RIGHT && pickY < cellList.GetLength(0) - 1 && centreLine == 2)
+                                        {
+                                            if /*(cellList[pickX, pickY - 1].GetisUnitPresent() || */(cellList[pickX, pickY - 1].GetMat())
+                                            {
+                                                matToLeft = true;
+                                            }
+                                        }
+                                        cellList[pickX, pickY].Draw(g, centreLine, loopFromBack, loopFromLeft, maxDepth, screenWidth, screenHeight, Globals.drawLines, matToLeft, MatFront);
+                                    }
+                           
+                                }
+
+                            }
+                            loopFromLeft++;
+                    
+                        }
+                        loopFromBack++;
+                    }
+                    if (Globals.drawText)
+                        {
+                            if (Globals.flags[0])
+                            {
+
+                                g.DrawString("DrawingMap! ", new Font("Arial", 16), new SolidBrush(Color.Red),0, 0);
+                                g.DrawString("Your direction is : " + thisPlayer.dir, new Font("Arial", 16), new SolidBrush(Color.Red), 0,20);
+                                g.DrawString("Your MaxDepth is : " + maxDepth, new Font("Arial", 16), new SolidBrush(Color.Red), 0,40);
+                                g.DrawString("PlayerID : " + this.thisPlayer.GetPlayerID(), new Font("Arial", 16), new SolidBrush(Color.Yellow), 0,60);
+
+
+                    }
+                    if (Globals.flags[3])
+                            {
+                                g.DrawString("Server Started!", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
+
+                            }
+                            if (Globals.flags[4])
+                            {
+                                g.DrawString("Client Started!", new Font("Arial", 16), new SolidBrush(Color.Red), this.Width / 2, (this.Height / 2) + 40);
+
+                            }
+                            if (Globals.flags[5])
+                            {
+                                g.DrawString("Messaged Received At Client: " + Globals.Message, new Font("Arial", 16), new SolidBrush(Color.Red), 0, (this.Height / 2) + 60);
+
+                            }
+                            if (Globals.flags[6])
+                            {
+                                g.DrawString("Messaged Received At Server: " + Globals.ServerMessage, new Font("Arial", 10), new SolidBrush(Color.Blue), 0, (this.Height / 2) + 80);
+
+                            }
+                    }
+
+                        //DrawGunShooting
+                        if (Globals.flags[1] == true)
+                        {
+                            RefreshPlayerView(this.thisPlayer.GetPlayerGunShoot());
+                            Globals.flags[1] = false;
+                            Globals.flags[2] = true;
+                        }
+                        //Set gun back to normal
+                        else if (Globals.flags[2] == true)
+                        {
+                            RefreshPlayerView(this.thisPlayer.GetPlayerGun());
+                            Globals.flags[2] = false;
+                        }
+
+                        if (Globals.drawGun)
+                        {
+                            g.DrawImage(thisPlayer.playerView, new Point(this.Width - thisPlayer.playerView.Width - 10, this.Height - thisPlayer.playerView.Height - 40));
+                        }
+
+                        if (cursorUp)
+                        {
+                            this.cursor.Draw(g);
+                        }
+                }
+                else{
+                        g.DrawString("Connected, Building new World", new Font("Arial", 16), new SolidBrush(Color.Black), this.Width / 2, (this.Height / 2) + 40);
+
+                }
+            if (thisPlayer.IsDead())
+            {
+                g.FillRectangle(new SolidBrush(Color.FromArgb(125, 255, 0, 0)), new RectangleF(0, 0, this.Width, this.Height));
+                g.DrawString("You Died", new Font("Comic Sans", 60), new SolidBrush(Color.Red), 0, (this.Height / 2) + 40);
+
+            }
+            g.Dispose();
+            e.DrawImage(n, 0, 0, n.Width, n.Height);
+                    //e.Dispose();
+
+                    //n.Save("Image"+Globals.animations[1]+".png");
+                    //Globals.animations[1]++;
+
+            }
         /// <summary>
         /// RefreshPlayerView takes a given image and sets the form's playerview as tat image resized to the application size
         /// </summary>
@@ -364,46 +938,127 @@ namespace DoomCloneV2
             {
                 picker = cellList.GetLength(0)-thisPlayer.GetX();
             }
-            else if (thisPlayer.dir == Directions.LEFT)
+            else
             {
                 picker = thisPlayer.GetX() + 1;
             }
-            if (picker > Globals.MaxPossibleDepth)
+            if (picker >= Globals.MaxPossibleDepth)
                 {
                     return Globals.MaxPossibleDepth;
                 }
-                else
+            else
                 {
+
                     return picker;
                 }
+        }
+
+        public void Move(string direction,Player p)
+        {
+            Debug.WriteLine("Move command issued");
+            if (direction == "Forward")
+            {
+                switch (p.dir)
+                {
+                    case Directions.UP:
+                        ChangeY(true,p);
+                        break;
+                    case Directions.DOWN:
+                        ChangeY(false, p);
+                        break;
+                    case Directions.LEFT:
+                        ChangeX(false, p);
+                        break;
+                    case Directions.RIGHT:
+                        ChangeX(true, p);
+                        break;
+                }
+            }
+            if (direction.Equals("Left"))
+            {
+                switch (p.dir)
+                {
+                    case Directions.UP:
+                        ChangeX(false, p);
+                        break;
+                    case Directions.DOWN:
+                        ChangeX(true, p);
+                        break;
+                    case Directions.LEFT:
+                        ChangeY(false, p);
+                        break;
+                    case Directions.RIGHT:
+                        ChangeY(true, p);
+                        break;
+                }
+            }
+            if (direction.Equals("Right"))
+            {
+                switch (p.dir)
+                {
+                    case Directions.UP:
+                        ChangeX(true, p);
+                        break;
+                    case Directions.DOWN:
+                        ChangeX(false, p);
+                        break;
+                    case Directions.LEFT:
+                        ChangeY(true, p);
+                        break;
+                    case Directions.RIGHT:
+                        ChangeY(false, p);
+                        break;
+                }
+            }
+            if (direction.Equals("Back"))
+            {
+                switch (p.dir)
+                {
+                    case Directions.UP:
+                        ChangeY(false, p);
+                        break;
+                    case Directions.DOWN:
+                        ChangeY(true, p);
+                        break;
+                    case Directions.LEFT:
+                        ChangeX(true, p);
+                        break;
+                    case Directions.RIGHT:
+                        ChangeX(false, p);
+                        break;
+                }
+            }
+
         }
         /// <summary>
         /// ChangeX trys to change the player's x co-ordinate. This method deals with invalid movement
         /// </summary>
         /// <param name="right">States whether to move the palyer right. If false, palyer will mvoe left</param>
-        private void ChangeX(bool right)
+        private void ChangeX(bool right,Player p)
         {
-            int x = thisPlayer.GetX();
-            int y = thisPlayer.Gety();
+            int x = p.GetX();
+            int y = p.Gety();
             if (right)
             {
                 if (x < cellList.GetLength(1) - 1)
                 {
-                    if (!cellList[x + 1, y].GetMat())
+                    if (!cellList[x + 1, y].GetMat() && !cellList[x + 1, y].GetisUnitPresent())
                     {
-                        this.thisPlayer.SetX(this.thisPlayer.GetX() + 1);
+                        cellList[x, y].SetPlayer(-1);
+                        cellList[x + 1, y].SetPlayer(p.GetPlayerID());
+                        p.SetX(p.GetX() + 1);
                     }
                 }
             }
             else
             {
-                if (x > 0)
+                if (x > 1)
                 {
-                    if (!cellList[x - 1, y].GetMat())
+                    if (!cellList[x - 1, y].GetMat() && !cellList[x - 1, y].GetisUnitPresent())
                     {
-
-
-                        this.thisPlayer.SetX(this.thisPlayer.GetX() - 1);
+                        cellList[x, y].SetPlayer(-1);
+                        cellList[x - 1, y].SetPlayer(p.GetPlayerID());
+                        p.SetX(p.GetX() - 1);
                     }
                 }
             }
@@ -412,31 +1067,56 @@ namespace DoomCloneV2
         /// ChangeY trys to change the player's y co-ordinate. This method deals with invalid movement
         /// </summary>
         /// <param name="up">States whether to move the palyer up. If false, player will move down</param>
-        private void ChangeY (bool up)
+        private void ChangeY(bool up,Player p)
         {
-            int x = thisPlayer.GetX();
-            int y = thisPlayer.Gety();
+            int x = p.GetX();
+            int y = p.Gety();
             if (up)
             {
-                if (y < cellList.GetLength(1) - 1)
+                if (y > 1)
                 {
-                    if (!cellList[x, y + 1].GetMat())
+                    if (!cellList[x, y - 1].GetMat() && !cellList[x, y - 1].GetisUnitPresent())
                     {
-
-                        this.thisPlayer.SetY(this.thisPlayer.Gety() + 1);
+                        cellList[x, y].SetPlayer(-1);
+                        cellList[x, y-1].SetPlayer(p.GetPlayerID());
+                        p.SetY(p.Gety() - 1);
                     }
                 }
+
             }
             else
             {
-                if (y > 0)
+                if (y < cellList.GetLength(1) - 1)
                 {
-                    if (!cellList[x, y - 1].GetMat())
+                    if (!cellList[x, y + 1].GetMat() && !cellList[x, y + 1].GetisUnitPresent())
                     {
-
-                        this.thisPlayer.SetY(this.thisPlayer.Gety() - 1);
+                        cellList[x, y].SetPlayer(-1);
+                        cellList[x, y + 1].SetPlayer(p.GetPlayerID());
+                        p.SetY(p.Gety() + 1);
                     }
                 }
+            }
+        }
+        private void MoveCommand(char direction)
+        {
+            if (Globals.SinglePlayer)
+            {
+                AddToCommandString("MVP"+String.Format("{0:00}", 0) +direction);
+            }
+            else
+            {
+                this.thisClient.Write("MVP" + String.Format("{0:00}", thisClient.GetID()) + direction);
+            }
+        }
+        private void DirectionCommand(char direction)
+        {
+            if (Globals.SinglePlayer)
+            {
+                AddToCommandString("DIP" + String.Format("{0:00}", 0) + direction);
+            }
+            else
+            {
+                this.thisClient.Write("DIP" + String.Format("{0:00}", this.thisClient.GetID()) + direction);
             }
         }
         /// <summary>
@@ -446,117 +1126,135 @@ namespace DoomCloneV2
         /// <param name="e">The arguments of this particular key press</param>
         private void OnKeyUp(object sender, KeyEventArgs e)
         {
+            bool servermade = false;
             Directions playersdir = thisPlayer.dir;
-            if (e.KeyCode == Keys.Space || e.KeyCode==Keys.D1)
+            Thread f = null;
+            switch (e.KeyCode)
             {
-                this.Text = "DOOMCLoneV2";
-                Globals.drawLines = !Globals.drawLines;
-                
-                
+                case Keys.Space :
+
+                    this.Text = "DOOMCLoneV2Lines";
+                    Globals.drawLines = !Globals.drawLines;
+                    break;
+                case Keys.D1:
+                    this.Text = "DOOMCLoneV2Lines";
+                    Globals.drawLines = !Globals.drawLines;
+                    break;
+                case Keys.D2:
+                    this.Text = "DOOMCLoneV2Color";
+                    Globals.drawFill = !Globals.drawFill;
+                    break;
+                case Keys.D3:
+                    this.Text = "DOOMCLoneV2Gun";
+                    Globals.drawGun = !Globals.drawGun;
+                    break;
+                case Keys.D4:
+                    this.Text = "DoomClone ";
+                    Globals.drawText = !Globals.drawText;
+                    break;
+                case Keys.S:
+
+                    MoveCommand('B');
+                    break;
+                case Keys.W:
+
+                    MoveCommand('F');
+                    break;
+                case Keys.D:
+
+                    MoveCommand('R');
+                    break;
+                case Keys.A:
+                    MoveCommand('L');
+                    break;
+                case Keys.Q:
+                    this.thisPlayer.RefreshGun();
+                    RefreshPlayerView(this.thisPlayer.playerView);
+                    break;
+                case Keys.U:
+                    Globals.flags[0] = !Globals.flags[0];
+                    for (int i = 3; i < Globals.flags.Length; i++)
+                    {
+                        Globals.flags[i] = false;
+                    }
+                    PrintMap();
+                    break;
+                //Server
+                case Keys.O:
+                    if (this.server == false)
+                    {
+                        this.server = true;
+                        Globals.SinglePlayer = false;
+                        f = new Thread(ThreadFunctions.ThreadRunnerServer);
+                        f.Start();
+                        Globals.flags[0] = false;
+                        for (int i = 3; i < Globals.flags.Length; i++)
+                        {
+                            Globals.flags[i] = false;
+                        }
+                        Globals.flags[3] = true;
+                        servermade = true;
+                    }
+                    break;
+                case Keys.P:
+                    Globals.SinglePlayer = false;
+                    if (thisClient == null)
+                    {
+                        Globals.flags[0] = false;
+                        for (int i = 3; i < Globals.flags.Length; i++)
+                        {
+                            Globals.flags[i] = false;
+                        }
+                        Globals.flags[4] = true;
+                        f = new Thread(ThreadFunctions.ClientThread);
+                        object args1;
+                        this.thisClient = new Client(Globals.port, Globals.Address, "The Client");
+                        args1 = this.thisClient;
+                        f.Start(args1);
+                    }
+                    break;
+                case Keys.L:
+                    Globals.SinglePlayer = false;
+                    
+                        f = new Thread(ThreadFunctions.ClientThread);
+                        object args;
+                        Client cl = new Client(Globals.port, Globals.Address, "The Client2",1);
+                        args = cl;
+                        f.Start(args);
+                    break;
+                case Keys.K:
+                    if (Globals.SinglePlayer)
+                    {
+                        AddToCommandString("P" + "Hey There From This Client at " + DateTime.Now);
+                    }
+                    else
+                    {
+                        this.thisClient.Write("P" + "Hey There From This Client at " + DateTime.Now);
+                    }
+                    break;
+                case Keys.V:
+                    if (!Globals.SinglePlayer)
+                    {
+                        this.thisClient.Write("ML1");
+                    }
+                    break;
             }
-            if (e.KeyCode == Keys.D2)
+            if (servermade == true)
             {
-                this.Text = "DOOMCLoneV2";
-                Globals.drawFill = !Globals.drawFill;
-
-
-            }
-            if (e.KeyCode == Keys.D3)
-            {
-                this.Text = "DOOMCLoneV2";
-                Globals.drawGun = !Globals.drawGun;
-
-
-            }
-            if (e.KeyCode == Keys.S)
-            {
-                switch (playersdir)
+                if (thisClient == null)
                 {
-                    case Directions.UP:
-                        ChangeY(true);
-                        break;
-                    case Directions.DOWN:
-                        ChangeY(false);
-                        break;
-                    case Directions.LEFT:
-                        ChangeX(true);
-                        break;
-                    case Directions.RIGHT:
-                        ChangeX(true);
-                        break;
+                    Globals.flags[0] = false;
+                    for (int i = 3; i < Globals.flags.Length; i++)
+                    {
+                        Globals.flags[i] = false;
+                    }
+                    Globals.flags[4] = true;
+                    f = new Thread(ThreadFunctions.ClientThread);
+                    object args;
+                    this.thisClient = new Client(Globals.port, Globals.Address, "The Client");
+                    args = this.thisClient;
+                    f.Start(args);
                 }
-
-
-            }
-            if (e.KeyCode == Keys.W)
-            {
-                switch (playersdir)
-                {
-                    case Directions.UP:
-                        ChangeY(false);
-                        break;
-                    case Directions.DOWN:
-                        ChangeY(true);
-                        break;
-                    case Directions.LEFT:
-                        ChangeX(false);
-                        break;
-                    case Directions.RIGHT:
-                        ChangeX(false);
-                        break;
-                }
-
-
-            }
-            if (e.KeyCode == Keys.D)
-            {
-                switch (playersdir)
-                {
-                    case Directions.UP:
-                        ChangeX(true);
-                        break;
-                    case Directions.DOWN:
-                        ChangeX(false);
-                        break;
-                    case Directions.LEFT:
-                        ChangeY(false);
-                        break;
-                    case Directions.RIGHT:
-                        ChangeY(true);
-                        break;
-                }
-
-            }
-            if (e.KeyCode == Keys.A)
-            {
-                switch (playersdir)
-                {
-                    case Directions.UP:
-                        ChangeX(false);
-                        break;
-                    case Directions.DOWN:
-                        ChangeX(true);
-                        break;
-                    case Directions.LEFT:
-                        ChangeY(true);
-                        break;
-                    case Directions.RIGHT:
-                        ChangeY(false);
-                        break;
-                }
-
-            }
-            if (e.KeyCode == Keys.P)
-            {
-                this.thisPlayer.RefreshGun();
-                RefreshPlayerView(this.thisPlayer.playerView);
-
-            }
-            if (e.KeyCode == Keys.U)
-            {
-                PrintMap();
-                Globals.flags[0] = true;
-
             }
             this.Update();
             this.Invalidate();
@@ -569,43 +1267,96 @@ namespace DoomCloneV2
             //Y
             for (int f = 0; f < cellList.GetLength(0); f++)
             {
-                Debug.Write("\n");
+                Debug.Write("\n\n");
                 //X
                 for (int i = 0; i < cellList.GetLength(1); i++)
                 {
+                    Debug.Write("[");
                     if (cellList[i,f].GetMat())
                     {
-                        Debug.Write("[*]");
+                        Debug.Write(" * ");
                     }
                     else if (thisPlayer.GetX() == i && thisPlayer.Gety() == f)
                     {
-                        Debug.Write(" ^^");
+                        Debug.Write("<3 ");
+                    }
+
+                    else if (cellList[i, f].GetPlayer() > -1)
+                    {
+                        Debug.Write(" " + cellList[i, f].GetPlayer() + " ");
                     }
                     else if (cellList[i, f].GetisUnitPresent())
                     {
-                        Debug.Write(" <3");
+                        Debug.Write("^-^");
                     }
                     else
                     {
-                        Debug.Write(" []");
+                        Debug.Write("   ");
                     }
+                    Debug.Write("]");
 
                 }
             }
         }
         /// <summary>
-        /// Handles the logic of a unit being clicked
+        /// CursorHandler is what happens if a click occurs while the cursor is up
         /// </summary>
-        /// <param name="unitClicked"></param>
-        private void ClickHandler(Unit unitClicked)
+        private void CursorHandler()
         {
+
             //Set gun as true and redraw
             Globals.flags[1] = true;
             thisPlayer.GetPlayerGunSound().Play();
-            if (unitClicked.alive == true)
+            int x = cursor.GetCoords()[0];
+            int y = cursor.GetCoords()[1];
+            for (int i = 0; i < units.Count; i++)
             {
-                unitClicked.DealDamage(thisPlayer.GetGunDamage());
+                Unit unitClicked = units[i];
+                if (x > unitClicked.topLeft.X && x < unitClicked.bottomRight.X)
+                {
+                    if (y < unitClicked.bottomRight.Y && y > unitClicked.topLeft.Y)
+                    {
+                        if (unitClicked.alive == true)
+                        {
+                            Debug.WriteLine("Unit is alive, dealing damage");
+                            Debug.WriteLine("Player is "+ String.Format("{0:00}",this.playerID));
+                            Debug.WriteLine("Gun Damage is " + String.Format("{0:0000}", thisPlayer.GetGunDamage()));
+                            Debug.WriteLine("Enemy index i is " + String.Format("{0:000}",i));
+                            Debug.WriteLine("Those 3 things together are " + String.Format("{0:000}", i)+"-" + String.Format("{0:00}", this.playerID) +"-"+ String.Format("{0:0000}", thisPlayer.GetGunDamage()));
+                            if (Globals.SinglePlayer)
+                            {
+                                AddToCommandString("SHE"+String.Format("{0:000}00{1:0000}",i,thisPlayer.GetGunDamage()));
+                            }
+                            else
+                            {
+                                this.thisClient.Write("SHE" + String.Format("{0:000}", i) + String.Format("{0:00}", this.playerID) + String.Format("{0:0000}", thisPlayer.GetGunDamage()));
+                            }
+                           // unitClicked.DealDamage(thisPlayer.GetGunDamage());
+                        }
+                    }
+                }
             }
+            if (shotsFired == 3)
+            {
+
+                cursorUp = false;
+                shotsFired = 0;
+                this.cursor = null;
+            }
+            else
+            {
+                shotsFired++;
+            }
+        }
+                
+        /// <summary>
+        /// Handles the logic of a unit being clicked
+        /// </summary>
+        /// <param name="unitClicked"></param>
+        private void ClickHandler(Unit unitClicked,int x,int y)
+        {
+            cursorUp = true;
+            this.cursor = new CursorObject(new Bitmap("Resources/Images/Utility/Crosshair.png"),x,y, this.Height/5,50);
             this.Invalidate();
         }
         /// <summary>
@@ -621,7 +1372,7 @@ namespace DoomCloneV2
             {
                 if (y < unitClicked.bottomRight.Y && y > unitClicked.topLeft.Y)
                 {
-                    ClickHandler(unitClicked);
+                    ClickHandler(unitClicked,x,y);
 
                     return 1;
                 }
@@ -635,11 +1386,26 @@ namespace DoomCloneV2
         /// <param name="e">The arguments of that particular MouseClick</param>
         private void MouseClicker(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            for(int i=0; i < units.Count; i++)
+            if (cursorUp)
             {
-                if (ClickedOn(units[i], e.X, e.Y) == 1)
+                if (e.Button == MouseButtons.Right)
                 {
-                    i = units.Count;
+                    cursorUp = false;
+                }
+                else
+                {
+
+                    CursorHandler();
+                }
+            }
+            else
+            {
+                for (int i = 0; i < units.Count; i++)
+                {
+                    if (ClickedOn(units[i], e.X, e.Y) == 1)
+                    {
+                        i = units.Count;
+                    }
                 }
             }
         }
@@ -660,8 +1426,7 @@ namespace DoomCloneV2
                 else if (switcher == Directions.RIGHT)
                 {
 
-                    thisPlayer.ChangeDirection("Right");
-                    Debug.WriteLine("Changing Direction Right");
+                    DirectionCommand('R');
                     switcher = Directions.NULL;
                     this.Invalidate();
                 }
@@ -676,677 +1441,19 @@ namespace DoomCloneV2
                 else if (switcher == Directions.LEFT)
                 {
 
-                    thisPlayer.ChangeDirection("Left");
-                    Debug.WriteLine("Changing Direction Left");
+                    DirectionCommand('L');
                     switcher = Directions.NULL;
                     this.Invalidate();
                 }
             }
             
         }
-    }/// <summary>
-    /// Unit is the class responsible for holding the information required to draw an object when viewed by the palyer,
-    ///and also as an area to stroe unit-instance-specific information such as a damage and health
-    /// </summary>
-    public class Unit
-    {
-        Bitmap unitImage;
-        Bitmap deadUnitImage;
-        Bitmap returnImage;
-        private int health = 20;
-        public Point topLeft = new Point(-1, -1);
-        public Point bottomRight = new Point(-1, -1);
-        public bool alive = true;
-        /// <summary>
-        /// setUpUnit is a constructor but like later
-        /// </summary>
-        /// <param name="unitImage">Provides a bitmap image to be read whenever the unit is 'alive'</param>
-        /// <param name="deadUnitImage">Provides a bitmap image to be read/drawn wheenever the unit is 'dead'</param>
-        public void setUpUnit(Bitmap unitImage,Bitmap deadUnitImage)
-        {
-            this.unitImage = unitImage;
-            this.deadUnitImage = deadUnitImage;
-            this.returnImage = this.unitImage;
-        }
-        /// <summary>
-        /// GetUnitImage in an accessor method to get the current image set as the unit's viewable image
-        /// </summary>
-        /// <returns>Returns the current image set as the unit's viewable image</returns>
-        public Bitmap getUnitImage()
-        {
-            return this.returnImage;
-        }
-        /// <summary>
-        /// setUnitImage in an accessor method to set the current image set as the unit's viewable image
-        /// </summary>
-        public void setUnitImage(Bitmap img)
-        {
-            this.unitImage=img;
-        }
-        /// <summary>
-        /// DealDamage in an accessor method used to edit the unit's current health, and perform required changes to the unit's state
-        /// such as making it's viewable image 'dead'
-        /// </summary>
-        public void DealDamage(int damage)
-        {
-            this.health -= damage;
-            if (this.health <= 0)
-            {
-                this.returnImage = deadUnitImage;
-            }
-        }
     }
-    public class Gun
-    {
-        /*
-         * muzzle_Flare -> Flare_[bullet Type]_[DamageRate]_[Name]
-receiver -> Receiver_[Camo Code]_[DamageRate]_[Name]
-ejection-> Ejection_[bullet Type]_[DamageRate]_[Name]
-front_Body-> Front_Body_[Camo Code]_[bullet Type]_[Name]
-barrel-> Barrel_[Camo Code]_[DamageRate]_[Name]
-magazine-> Magazine_[bullet Type]_[Ammo_Cap]_[Name]
-grip-> Grip_[Camo Code]_[Grip_Type]_[Name]
-arm-> Arm_[Uniform Code]_[Armour_Code]_[Name]
-hand-> Hand_[Race Code]_[Style Code]_[Name]
-rail-> Rail_[Bullet Type]_[DamageRate]_[Name]
-sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
-         * */
-        int damage;
-        String camo_Code; // 000-Universal // 001- Tiger Strike // 002-Pinky
-        String bullet_Type; // 000-Universal // 001 - Bullets //002 Rail
-        String damage_Rate; // 000-Universal // 001 -Medium //002-Heavy
-        String ammo_Cap; // 000 20-30 Rounds // 001 - 60-100 // 002 -1-5
-        String uniform_Code; // 000 - Universal // 001 - Green Camo // 002 - Navy 
-        String armour_Code; // 000-No Armour
-        String race_Code;// 000-Human
-        String style_Code;// 000- Ungloved White
-        String sight_Code;// 000 - Irons/No scope // 001 -Red dot
-        String grip_Type; // 000 - Medium Grip // 001 -Bipod // 002- L        Bitmap muzzle_Flare;
-        Bitmap receiver;
-        Bitmap ejection;
-        Bitmap front_Body;
-        Bitmap barrel;
-        Bitmap magazine;
-        Bitmap grip;
-        Bitmap arm;
-        Bitmap hand;
-        Bitmap token;
-        Bitmap rail;
-        Bitmap sight;
-        Bitmap muzzle_Flare;
-        Bitmap picture;
-        Bitmap pictureShoot;
-        System.Media.SoundPlayer player;
-        public Gun(String camo_Code, String bullet_Type, String damage_Rate, String ammo_Cap, String uniform_Code, String armour_Code, String race_Code, String style_Code, String sight_Code,String grip_Type,int damage)
-        {
-            this.damage=damage;
-            this.camo_Code=camo_Code; // 000-Universal // 001- Tiger Strike // 002-Pinky
-            this.bullet_Type=bullet_Type; // 000-Universal // 001 - Bullets //002 Rail
-            this.damage_Rate=damage_Rate; // 000-Universal // 001 -Medium //002-Heavy
-            this.ammo_Cap=ammo_Cap; // 000 20-30 Rounds // 001 - 60-100 // 002 -1-5
-            this.uniform_Code=uniform_Code; // 000 - Universal // 001 - Green Camo // 002 - Navy 
-            this.armour_Code=armour_Code; // 000-No Armour
-            this.race_Code=race_Code;// 000-Human
-            this.style_Code=style_Code;// 000- Ungloved White
-            this.sight_Code=sight_Code;// 000 - Irons/No scope // 001 -Red dot
-            this.grip_Type=grip_Type; 
-            this.buildGun();
-        }
-        private void buildGun()
-        {
-            setComponent("Barrel");
-            setComponent("Muzzle_Flare");
-            setComponent("Hand");
-            setComponent("Grip");
-            setComponent("Ejection");
-            setComponent("Rail");
-            setComponent("Sight");
-            setComponent("Front_Body");
-            setComponent("Receiver");
-
-            setComponent("Token");
-            setComponent("Arm");
-            setComponent("Magazine");
-            picture = new Bitmap(arm.Width,arm.Height, PixelFormat.Format32bppPArgb);
-            Graphics g = Graphics.FromImage(picture);
-            g.DrawImage(this.barrel, new Point(0,0));
-            g.DrawImage(this.hand, new Point(0, 0));
-            g.DrawImage(this.grip, new Point(0, 0));
-            g.DrawImage(this.rail, new Point(0, 0));
-            g.DrawImage(this.sight, new Point(0, 0));
-            g.DrawImage(this.front_Body, new Point(0, 0));
-            g.DrawImage(this.receiver, new Point(0, 0));
-
-            g.DrawImage(this.ejection, new Point(0, 0));
-            g.DrawImage(this.token, new Point(0, 0));
-            g.DrawImage(this.arm, new Point(0, 0));
-            g.DrawImage(this.magazine, new Point(0, 0));
-            g.Dispose();
-            pictureShoot = new Bitmap(arm.Width, arm.Height, PixelFormat.Format32bppPArgb);
-            g = Graphics.FromImage(pictureShoot);
-            g.DrawImage(this.barrel, new Point(0, 0));
-            g.DrawImage(this.muzzle_Flare, new Point(0, 0));
-            g.DrawImage(this.hand, new Point(0, 0));
-            g.DrawImage(this.grip, new Point(0, 0));
-            g.DrawImage(this.rail, new Point(0, 0));
-            g.DrawImage(this.sight, new Point(0, 0));
-            g.DrawImage(this.front_Body, new Point(0, 0));
-            g.DrawImage(this.receiver, new Point(0, 0));
-
-            g.DrawImage(this.ejection, new Point(0, 0));
-            g.DrawImage(this.token, new Point(0, 0));
-            g.DrawImage(this.arm, new Point(0, 0));
-            g.DrawImage(this.magazine, new Point(0, 0));
-            g.RotateTransform(20);
-            g.Dispose();
-            player = new System.Media.SoundPlayer("Resources/Sound/Bang_"+this.bullet_Type+"_"+this.damage_Rate+".wav");
-            Debug.WriteLine("Resources/Sound/Bang_" + this.bullet_Type + "_" + this.damage_Rate + ".wav");
-        }
-
-        public System.Media.SoundPlayer GetSound()
-        {
-            return this.player;
-        }
-        public Bitmap GetImage()
-        {
-            return this.picture;
-        }
-        public int GetDamage()
-        {
-            return this.damage;
-        }
-        public Bitmap GetImageShoot()
-        {
-            return this.pictureShoot;
-        }
-        private void setComponent(String gunPart)
-        {
-            Random rand = new Random();
-            string RunningPath = AppDomain.CurrentDomain.BaseDirectory;
-
-            String imgPath = RunningPath + "Resources\\Images\\Gun_Parts\\" + gunPart + "\\";
-            String[] possibleImgs = System.IO.Directory.GetFiles(imgPath, "*.png");
-            List<String> relevantImgs = new List<String>();
-            for(int i=0; i < possibleImgs.Count(); i++)
-            {
-                String fileName = possibleImgs[i].Substring(imgPath.Length, possibleImgs[i].Length - imgPath.Length);
-                int firstVarStart = gunPart.Length+1;
-                int secondVarStart = gunPart.Length + 5;
-                switch (gunPart)
-                {
-                    case "Barrel":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000")|| fileName.Substring(firstVarStart, 3).Equals(this.camo_Code))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.damage_Rate))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Muzzle_Flare":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.bullet_Type))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.damage_Rate))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Receiver":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.camo_Code))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.damage_Rate))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Ejection":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.bullet_Type))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.damage_Rate))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Front_Body":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.camo_Code))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.bullet_Type))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Magazine":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.bullet_Type))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.ammo_Cap))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Grip":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.camo_Code))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals(this.grip_Type))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Arm":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.uniform_Code))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals(this.armour_Code))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Hand":
-                        if (fileName.Substring(firstVarStart, 3).Equals(this.race_Code))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals(this.style_Code))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Rail":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.bullet_Type))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.damage_Rate))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Sight":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.camo_Code))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals(this.sight_Code))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    case "Token":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.grip_Type))
-                        {
-                            if (fileName.Substring(secondVarStart, 3).Equals(this.style_Code))
-                            {
-                                relevantImgs.Add(possibleImgs[i]);
-                            }
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-            int numberPicked = rand.Next(relevantImgs.Count());
-            switch (gunPart)
-            {
-                case "Barrel":
-                    this.barrel = new Bitmap(relevantImgs[numberPicked]);
-                    
-                    break;
-                case "Muzzle_Flare":
-                    this.muzzle_Flare = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Receiver":
-                    this.receiver = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Ejection":
-                    this.ejection = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Front_Body":
-                    this.front_Body = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Magazine":
-                    this.magazine = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Grip":
-                    this.grip = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Arm":
-                    this.arm = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Hand":
-                    this.hand = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Rail":
-                    this.rail = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Sight":
-                    this.sight = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                case "Token":
-                    this.token = new Bitmap(relevantImgs[numberPicked]);
-
-                    break;
-                default:
-                    Debug.WriteLine("Unkown Switch "+gunPart);
-                    break;
-            }
-
-
-        }
-    }
-    public class Cell
-    {
-
-        Color drawColor;
-        Color floorColor;
-        Color roofColor;
-        bool mat = false;
-        bool isUnitOnCell = false;
-        Unit unitOnCell = null;
-        public Cell(bool mat, Color drawColor,Color floorColor, Color roofColor)
-        {
-            this.mat = mat;
-            this.drawColor = drawColor;
-            this.floorColor = floorColor;
-            this.roofColor = roofColor;
-        }
-        public Unit createUnit(Bitmap unitPic, Bitmap unitPicDead)
-        {
-            this.isUnitOnCell = true;
-            this.unitOnCell = new Unit();
-            this.unitOnCell.setUpUnit(unitPic,unitPicDead);
-            return this.unitOnCell;
-        }
-        public bool GetisUnitPresent()
-        {
-            return this.isUnitOnCell;
-        }
-        public Unit GetUnitOnCell()
-        {
-            if (GetisUnitPresent())
-            {
-                return this.unitOnCell;
-            }
-            else 
-            { 
-                return null; 
-            }
-        }
-        public bool GetMat()
-        {
-            return this.mat;
-        }
-        public void setMat(bool mat,Color color)
-        {
-            this.mat = mat;
-            this.drawColor = color;
-        }
-        
-        public void Draw(Graphics g, int centreLine, int loopFromBack, int loopFromLeft, int maxDepth, int screenLength, int screenHeight, bool drawLines, bool drawLeftMat,bool playerOn=false)
-        {
-
-            Point[] points;
-            int drawLength = screenLength/(((maxDepth-loopFromBack)*2)-1);
-            int drawHeight = screenHeight / (((maxDepth - loopFromBack) * 2) - 1);
-            int drawLengthPrior = screenLength / (((maxDepth - loopFromBack+1) * 2) - 1);
-            int drawHeightPrior = screenHeight / (((maxDepth - loopFromBack+1) * 2) - 1);
-            int[] topLeft = new int[] { (drawLength * (loopFromLeft-1)), screenHeight / 2 - (drawHeight / 2) };
-            int[] topRight = new int[] { (drawLength * (loopFromLeft-1)) +drawLength, screenHeight / 2 - (drawHeight / 2) };
-            int[] bottomLeft = new int[] { drawLength * (loopFromLeft-1), screenHeight / 2 - (drawHeight / 2) + drawHeight}; 
-            int[] bottomRight = new int[] { drawLength * (loopFromLeft-1) + drawLength, screenHeight / 2 - (drawHeight / 2) + drawHeight };
-            int PriorLoop = loopFromLeft;
-            int[] topLeftPrior = new int[] { drawLengthPrior * (PriorLoop), screenHeight / 2 - (drawHeightPrior / 2) };
-            int[] bottomRightPrior = new int[] { drawLengthPrior * (PriorLoop) + drawLengthPrior, screenHeight / 2 - (drawHeightPrior / 2) + drawHeightPrior };
-            int[] topRightPrior = new int[] {(drawLengthPrior * (PriorLoop)) + drawLengthPrior, screenHeight / 2 - (drawHeightPrior / 2) }; 
-            int[] bottomLeftPrior = new int[] {drawLengthPrior * (PriorLoop), screenHeight / 2 - (drawHeightPrior / 2) + drawHeightPrior };
-
-            if (Globals.drawFill)
-            {
-                //IfBackRow
-                if (loopFromBack == 0)
-                {
-                    Color drawing = this.drawColor;
-                    if (this.mat == false)
-                    {
-                        drawing = Color.Gray;
-                    }
-                    g.FillRectangle(new SolidBrush(drawing), drawLength * (loopFromLeft), screenHeight / 2 - (drawHeight / 2), drawLength, drawHeight);
-                }
-                if (loopFromBack == 1 && maxDepth == Globals.maxView)
-                {
-                    Color drawing = this.drawColor;
-                    if (this.mat == false)
-                    {
-                        drawing = Color.FromArgb(75, 0, 0, 0);
-                    }
-                    g.FillRectangle(new SolidBrush(drawing), drawLength * (loopFromLeft), screenHeight / 2 - (drawHeight / 2), drawLength, drawHeight);
-                }
-                if (loopFromBack > 0)
-                {
-
-                    if (drawLeftMat == false)
-                    {
-                        //DrawFloor
-                        points = new Point[] { new Point(bottomLeft[0], bottomLeft[1]), new Point(bottomLeftPrior[0], bottomLeftPrior[1]), new Point(bottomRightPrior[0], bottomRightPrior[1]), new Point(bottomRight[0], bottomRight[1]) };
-                        g.FillPolygon(new SolidBrush(this.floorColor), points);
-                        //DrawRoof
-                        points = new Point[] { new Point(topLeft[0], topLeft[1]), new Point(topRight[0], topRight[1]), new Point(topRightPrior[0], topRightPrior[1]), new Point(topLeftPrior[0], topLeftPrior[1]) };
-                        g.FillPolygon(new SolidBrush(this.roofColor), points);
-                    }
-                    else
-                    {
-                        //DrawFloor
-                        points = new Point[] { new Point(bottomLeft[0], bottomLeft[1]), new Point(bottomLeft[0], bottomLeftPrior[1]), new Point(bottomRightPrior[0], bottomRightPrior[1]), new Point(bottomRight[0], bottomRight[1]) };
-                        g.FillPolygon(new SolidBrush(this.floorColor), points);
-                        //DrawRoof
-                        points = new Point[] { new Point(topLeft[0], topLeft[1]), new Point(topRight[0], topRight[1]), new Point(topRightPrior[0], topRightPrior[1]), new Point(topLeft[0], topLeftPrior[1]) };
-                        g.FillPolygon(new SolidBrush(this.roofColor), points);
-                    }
-                    if (this.mat)
-                    {
-                        //DrawToRight
-                        if (centreLine == 0)
-                        {
-                            points = new Point[] { new Point((drawLength * (loopFromLeft - 1)) + drawLength, screenHeight / 2 - (drawHeight / 2)), new Point((drawLengthPrior * (loopFromLeft)) + drawLengthPrior, screenHeight / 2 - (drawHeightPrior / 2)), new Point(drawLengthPrior * (loopFromLeft) + drawLengthPrior, screenHeight / 2 - (drawHeightPrior / 2) + drawHeightPrior), new Point(drawLength * (loopFromLeft - 1) + drawLength, screenHeight / 2 - (drawHeight / 2) + drawHeight) };
-                            g.FillPolygon(new SolidBrush(Color.Red), points);
-                        }
-                        //DrawToLeft
-                        else if (centreLine == 2 && !drawLeftMat)
-                        {
-                            points = new Point[] { new Point(topLeft[0], topLeft[1]), new Point(bottomLeft[0], bottomLeft[1]), new Point(bottomLeftPrior[0], bottomLeftPrior[1]), new Point(topLeftPrior[0], topLeftPrior[1]) };
-                            g.FillPolygon(new SolidBrush(Color.Blue), points);
-                        }
-                        if (!playerOn)
-                        {
-                            g.FillRectangle(new SolidBrush(this.drawColor), drawLength * (loopFromLeft - 1), screenHeight / 2 - (drawHeight / 2), drawLength, drawHeight);
-
-                        }
-
-
-                    }
-                    else
-                    {
-                        if (isUnitOnCell)
-                        {
-                            Bitmap drawImage = unitOnCell.getUnitImage();
-                            //drawImage=ResizeImage(drawImage,drawImage.Width / (((maxDepth - loopFromBack) * 2) -3 ), drawImage.Height / (((maxDepth - loopFromBack) * 2) -3));
-                            drawImage = Globals.ResizeImage(drawImage, drawLength, drawHeight);
-                            g.DrawImage(drawImage, new Point(topLeft[0], topLeft[1]));
-                            unitOnCell.topLeft = new Point(topLeft[0], topLeft[1]);
-                            unitOnCell.bottomRight = new Point(topLeft[0] + drawImage.Width, topLeft[1] + drawImage.Height);
-                            Random rand = new Random();
-                            if (rand.Next(5) == 3 && unitOnCell.alive)
-                            {
-                                if (rand.Next(2) == 0)
-                                {
-                                    System.Media.SoundPlayer player = new System.Media.SoundPlayer("Resources/Sound/Boof.wav");
-                                    player.Play();
-                                }
-                                else
-                                {
-                                    System.Media.SoundPlayer player = new System.Media.SoundPlayer("Resources/Sound/Boof2.wav");
-                                    player.Play();
-                                }
-                            }
-
-
-
-                        }
-                    }
-
-
-                }
-            }
-            
-            if (drawLines )
-            {
-                //Draw outline
-                g.DrawRectangle(new Pen(Color.Black), drawLength * (loopFromLeft), screenHeight / 2 - (drawHeight / 2), drawLength, drawHeight);
-                if(loopFromBack > 0)
-                {
-                    //Draw connectors
-                    //top left
-                    g.DrawLine(new Pen(Color.Black), drawLength * (loopFromLeft), screenHeight / 2 - (drawHeight / 2),/*draw to */ drawLengthPrior * (loopFromLeft + 1), screenHeight / 2 - (drawHeightPrior / 2));
-                    //top right
-                    g.DrawLine(new Pen(Color.Black), (drawLength * (loopFromLeft)) + drawLength, screenHeight / 2 - (drawHeight / 2),/*draw to */ (drawLengthPrior * (loopFromLeft + 1)) + drawLengthPrior, screenHeight / 2 - (drawHeightPrior / 2));
-                    //bottom left
-                    g.DrawLine(new Pen(Color.Black), drawLength * (loopFromLeft), screenHeight / 2 - (drawHeight / 2) + drawHeight,/*draw to */ drawLengthPrior * (loopFromLeft + 1), screenHeight / 2 - (drawHeightPrior / 2) + drawHeightPrior);
-                    //bottom right
-                    g.DrawLine(new Pen(Color.Black),bottomRight[0],bottomRight[1],bottomLeft[0],bottomLeft[1]);
-
-                }
-
-
-
-
-            } 
-        }
-    }
+   
     public enum Directions
     {
         UP,DOWN,LEFT,RIGHT,NULL
     }
     
-    public class Player
-    {
-        private int xPos { get; set; }
-        private int yPos { get; set; }
-        private Gun playerGun;
-        public Directions dir = Directions.UP;
-        public Bitmap playerView;
-      
-        public Player(int x, int y,int gunType)
-        {
-            CreateGun();
-            this.yPos = y;
-            this.xPos = x;
-            
-        }
-        private void CreateGun()
-        {
-            Random rand = new Random();
-            String Camo = "00" + (rand.Next(3) + 2);
-            String Damage = "00" + (rand.Next(2) + 1);
-            String Sight = "00" + (rand.Next(2));
-            String Grip = "00" + (rand.Next(3) );
-            String Ammo = "00" + (rand.Next(2));
-            int damage = rand.Next(21);
-            Debug.WriteLine("New Gun with Camo/Damage: " + Camo + " \\ " + Damage);
-            this.playerGun = new Gun(Camo, "001",Damage,Ammo, "001", "000", "000", "000",Sight,Grip,damage);
-            this.playerView = GetPlayerGun();
-        }
-        public int GetGunDamage()
-        {
-            return this.playerGun.GetDamage();
-        }
-        public System.Media.SoundPlayer GetPlayerGunSOund()
-        {
-            return this.playerGun.GetSound();
-        }
-        public void RefreshGun()
-        {
-            this.CreateGun();
-        }
-        public Bitmap GetPlayerGun()
-        {
-            return playerGun.GetImage();
-        }
-        public Bitmap GetPlayerGunShoot()
-        {
-            return playerGun.GetImageShoot();
-        }
-        public System.Media.SoundPlayer GetPlayerGunSound()
-        {
-            return playerGun.GetSound();
-        }
-        public int GetX()
-        {
-            return xPos;
-        }
-        public int Gety()
-        {
-            return yPos;
-        }
-        public int SetY(int i)
-        {
-            this.yPos = i;
-            return yPos;
-        }
-        public int SetX(int i)
-        { 
-            this.xPos = i;
-            return xPos;
-        }
-        public void ChangeDirection(String direction)
-        {
-            if(direction.Equals( "Right"))
-            {
-                switch (this.dir)
-                {
-                    case Directions.DOWN:
-                        this.dir = Directions.LEFT;
-                        break;
-                    case Directions.RIGHT:
-                        this.dir = Directions.DOWN;
-                        break;
-                    case Directions.UP:
-                        this.dir = Directions.RIGHT;
-                        break;
-                    case Directions.LEFT:
-                        this.dir = Directions.UP;
-                        break;
-                }
-            }
-            else
-            {
-                switch (this.dir)
-                {
-                    case Directions.DOWN:
-                        this.dir = Directions.RIGHT;
-                        break;
-                    case Directions.RIGHT:
-                        this.dir = Directions.UP;
-                        break;
-                    case Directions.UP:
-                        this.dir = Directions.LEFT;
-                        break;
-                    case Directions.LEFT:
-                        this.dir = Directions.DOWN;
-                        break;
-                }
-
-            }
-        }
-    }
+    
 }

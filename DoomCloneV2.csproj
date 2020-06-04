@@ -1,0 +1,184 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{6B4DCAF4-5476-4D81-9873-9AD8A9D5B633}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>DoomCloneV2</RootNamespace>
+    <AssemblyName>DoomCloneV2</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Cell.cs" />
+    <Compile Include="Client.cs" />
+    <Compile Include="Command.cs" />
+    <Compile Include="CursorObject.cs" />
+    <Compile Include="Globals.cs" />
+    <Compile Include="Gun.cs" />
+    <Compile Include="Player.cs" />
+    <Compile Include="Server.cs" />
+    <Compile Include="ThreadFunctions.cs" />
+    <Compile Include="Unit.cs" />
+    <Compile Include="Form1.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form1.Designer.cs">
+      <DependentUpon>Form1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Form1.resx">
+      <DependentUpon>Form1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <None Include="Resources\Images\Gun Parts\Defaults\Rifle - Copy.pdn" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Changes.txt" />
+    <Content Include="config.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\DoomClone.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Enemy\Devil\Devil_Death.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Enemy\Devil\Devil_Idle.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player1\Player1_Idle.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Gun Parts\Arm\Arm_001_000_Camo.png" />
+    <Content Include="Resources\Images\Gun Parts\Arm\Arm_002_000_Navy.png" />
+    <Content Include="Resources\Images\Gun Parts\Barrel\Barrel_000_001_Simple.png" />
+    <Content Include="Resources\Images\Gun Parts\Barrel\Barrel_000_002_Boring.png" />
+    <Content Include="Resources\Images\Gun Parts\Defaults\Camo_Arm.png" />
+    <Content Include="Resources\Images\Gun Parts\Defaults\First_Gun_Idle.png" />
+    <Content Include="Resources\Images\Gun Parts\Defaults\First_Gun_Shoot.png" />
+    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Arm.png" />
+    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Barrel.png" />
+    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Body.png" />
+    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Ejection.png" />
+    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Flare.png" />
+    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Grip.png" />
+    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Hand.png" />
+    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Magazine.png" />
+    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Sight.png" />
+    <Content Include="Resources\Images\Gun Parts\Defaults\Zebra_Body.png" />
+    <Content Include="Resources\Images\Gun Parts\Ejection\Ejection_001_000_Skull.png" />
+    <Content Include="Resources\Images\Gun Parts\Ejection\Ejection_001_001_Heavy_Empty.png" />
+    <Content Include="Resources\Images\Gun Parts\Front_Body\Front_Body_000_001_Boring.png" />
+    <Content Include="Resources\Images\Gun Parts\Front_Body\Front_Body_002_001_TigerStrike.png" />
+    <Content Include="Resources\Images\Gun Parts\Front_Body\Front_Body_003_001_Pinky.png" />
+    <Content Include="Resources\Images\Gun Parts\Grip\Grip_000_000_Boring.png" />
+    <Content Include="Resources\Images\Gun Parts\Grip\Grip_000_001_Bipod.png" />
+    <Content Include="Resources\Images\Gun Parts\Grip\Grip_000_002_No_Grip.png" />
+    <Content Include="Resources\Images\Gun Parts\Grip\Grip_000_003_WetWork.png" />
+    <Content Include="Resources\Images\Gun Parts\Hands\Hand_000_WhiteHand.png" />
+    <Content Include="Resources\Images\Gun Parts\Magazine\Magazine_001_000_BoxMag.png" />
+    <Content Include="Resources\Images\Gun Parts\Magazine\Magazine_001_000_LMagGreen.png" />
+    <Content Include="Resources\Images\Gun Parts\Magazine\Magazine_001_001_DrumMagazine.png" />
+    <Content Include="Resources\Images\Gun Parts\Muzzle_Flare\Flare_001_000_Rifle_1.png" />
+    <Content Include="Resources\Images\Gun Parts\Rails\Rail_001_000_SpeirsGrey_Arrows.png" />
+    <Content Include="Resources\Images\Gun Parts\Rails\Rail_001_000_SpeirsGrey_Dots.png" />
+    <Content Include="Resources\Images\Gun Parts\Rails\Rail_001_000_SpeirsGrey_Lines.png" />
+    <Content Include="Resources\Images\Gun Parts\Receiver\Receiver_002_001_TigerStrike.png" />
+    <Content Include="Resources\Images\Gun Parts\Receiver\Receiver_003_001_Pinky.png" />
+    <Content Include="Resources\Images\Gun Parts\Sight\Sight_000_000_Boring.png" />
+    <Content Include="Resources\Images\Gun Parts\Sight\Sight_000_001_Matrix.png" />
+    <Content Include="Resources\Images\Gun Parts\Sight\Sight_000_001_RedDot.png" />
+    <Content Include="Resources\Images\Utility\Crosshair.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Sound\Bang_001_001.wav">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Sound\Bang_001_002.wav">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Sound\Boof.wav">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Sound\Boof2.wav">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\DevilSuit.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\DevilSuit_Dead.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Gun_Idle.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Gun_Shoot.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Girl.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\UMP45.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
