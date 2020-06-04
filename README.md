@@ -4,10 +4,11 @@ I've been working on this project for about 10 days, and am now trying to better
 progress and follow better SDLC practice.
 ## Features(Planned In Brackets)
 
-* Add features here :P
+* Add features here :P (Will Do this after next bild - friendship build 31/05/2020)
 
 ## View of progress
 **Displaying user view as 3d boxes**
+
 ![DoomClone](CellLines.PNG)
 
 **Displaying user view as 3d boxes, with random color between 'points' to make**
@@ -32,11 +33,19 @@ progress and follow better SDLC practice.
 
 ## Latest Update
 
-13/05/2020 - Cursor Firing Mechanic
+16/05/2020 - Synced worlds over networks, synced damage models
 
 ## Next Build
 
-Week ending 30/05/2020
+Week ending 31/05/2020 - Friendship Build
+
+* TCP Multiplayer
+
+* Animations
+
+*Simple Combat System
+
+*Merge current 3 branches (Master,TCP,Animation)
 
 ## Skill developing
 
@@ -50,26 +59,43 @@ I planned on this project improving my skills in the following:
 
 >Correct SDLC practice
 
+>Pixel Art and Animation
+
 ## Installing and Compiling:
 At the moment, the program can be run by unzipping the 'Resources.zip' folder & replacing the bin/Debug 'Resources' folder with it
 The program can be run by opening *bin/DebugDoomCloneV2.exe*
+
 The *bin/Debug/config.xml* file contains the option to select your server address to connect to and your clientName when you connect
 The Program currently has the following commands:
+
 *W* Move your player Forward
+
 *S* Move your player Back
+
 *A* Move your player Left
+
 *D* Move your player Right
+
 *Q* Replace the gun currently equipped
+
 *O* Start a server on your local ip address
+
 *P* Start a client that connects with the address listed in config.xml
+
 *K* If client created, send a hello message over the network stream
+
 *L* Create a second local client. This client will not perform actions, but act as a faux connection
+
 *V* If they exist, move players[1] to the right
+
 *1* or *Spacebar* Display lines of each cell
+
 *2* Toggle color of cells
+
 *3* Toggle drawing player gun
+
 *4* Toggle displaying debug text
 
 To Fire, click on an enemy who is alive. A cursor wll appear,
-and the next 3 clicks will shoot at the centre of the cursor.
+and the next 3-4 clicks will shoot at the centre of the cursor.
 
