@@ -465,7 +465,7 @@ namespace DoomCloneV2
                                     Globals.Pause=true;
                                     Thread.Sleep(2000);
                                     Debug.WriteLine("Performing ServerClient Connection Request by making new player");
-                                    players.Add(new Player(5 + players.Count, 5 + players.Count, 1,players.Count-1));
+                                    players.Add(new Player(5 + players.Count, 5 + players.Count, 1,players.Count));
                                     playerUnits.Add(cellList[5 + players.Count - 1, 5 + players.Count - 1].createUnit(5 + players.Count - 1, 5 + players.Count - 1, new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
                                     Debug.WriteLine("ServerClient: Messaging out New Players. There are " + players.Count + " players");
                                     thisClient.Write("DEL");
@@ -608,7 +608,7 @@ namespace DoomCloneV2
                                     Debug.WriteLine(thisClient.GetName() + ":ID already set to" + thisClient.GetID());
                                 }
                                 break;
-                                //DealDamageTOEnemy
+                                //DealDamageTOEnemyplayerID
                             case "SHE":
                                 int shootingPlayer = Int32.Parse(commands[i].Substring(6, 2));
                                 int enemyIndex = Int32.Parse(commands[i].Substring(3, 3));
@@ -626,7 +626,7 @@ namespace DoomCloneV2
                                     int playerx1 = Int32.Parse(commands[i].Substring(5, 3));
                                     int playery1 = Int32.Parse(commands[i].Substring(8, 3));
                                     char d = Char.Parse(commands[i].Substring(11,1));
-                                Globals.Message = "Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count;
+                                    Globals.Message = "Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count;
                                     Debug.WriteLine("Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count);
                                     if (this.players.Count == playerID1)
                                     {
@@ -699,10 +699,6 @@ namespace DoomCloneV2
             /// <param name="unitsa">Whether to draw non-cell specfic items (Such as units or player views)</param>
             private void FormUpdate(bool unitsa = false,Graphics e = null)
             {
-                if (this.thisClient != null)
-                {
-                    this.playerID = thisClient.GetID();
-                }
                 RunCommands();
 
                 Bitmap n = new Bitmap(this.Width, this.Height);
@@ -1044,8 +1040,15 @@ namespace DoomCloneV2
                 {
                     if (!cellList[x + 1, y].GetMat() && !cellList[x + 1, y].GetisUnitPresent())
                     {
+                        Debug.WriteLine("CELL MOVE:Cell "+x+","+y+" Player ID was "+cellList[x,y].GetPlayer());
                         cellList[x, y].SetPlayer(-1);
+
+                        Debug.WriteLine("CELL MOVE:Cell " + x + "," + y + " Player ID is Noe " + cellList[x, y].GetPlayer());
+
+                        Debug.WriteLine("CELL MOVE:Cell " + (x +1)+ "," + y + " Player ID was " + cellList[x, y].GetPlayer()+"before move");
                         cellList[x + 1, y].SetPlayer(p.GetPlayerID());
+
+                        Debug.WriteLine("CELL MOVE:Cell " + (x+1) + "," + y + " Player ID is now " + cellList[x, y].GetPlayer());
                         p.SetX(p.GetX() + 1);
                     }
                 }

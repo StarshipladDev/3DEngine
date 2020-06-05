@@ -1,8 +1,11 @@
 Resources
 Resources/*
-bin/Release
-bin/Release/*
+bin
+bin/*
 Changes.txt
 obj
 obj/*
+Properties
+Properties/*
 .vs
+.resx
