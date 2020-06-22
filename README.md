@@ -37,7 +37,7 @@ Below is the process used to draw a '3d' world.
 
 **Displaying user view with scaled (based on distance) sprites**
 
-![DoomClone](ColorCellsEnemies.PNG)
+![DoomClone](ColorCellEnemies.PNG)
 
 **Displaying user view with 1:1 window size scaled 'player character view'**
 
