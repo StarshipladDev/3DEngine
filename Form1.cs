@@ -319,44 +319,7 @@ namespace DoomCloneV2
                             //MOVE PLAYER
                             //
                             case "MVP":
-                                int x = Int32.Parse(commands[i].Substring(3, 2));
-                                int oldx = players[x].GetX();
-                                int oldy = players[x].Gety();
-                                Debug.WriteLine(" Moving Player " + x +String.Format(" From {0},{0} ", oldx,oldy ));
-                                if (x > -1 && x<players.Count)
-                                {
-                                    char directionChar= Char.Parse(commands[i].Substring(5, 1));
-                                    switch(directionChar)
-                                    {
-                                        case 'F':
-                                            Move("Forward", players[x]);
-                                            break;
-                                        case 'B':
-                                            Move("Back", players[x]);
-                                            break;
-                                        case 'L':
-                                            Move("Left", players[x]);
-                                            break;
-                                        case 'R':
-                                            Move("Right", players[x]);
-                                            break;
-                                    }
-                                    Debug.WriteLine(String.Format("To  {0},{1}.", players[x].GetX(), players[x].Gety()));
-                                    if (x != playerID)
-                                    {
-                                        Debug.WriteLine("Removing player on " + oldx + "," + oldy + ", setting new player on" + players[x].GetX() + "," + players[x].Gety()) ;
-                                        cellList[oldx, oldy].RemoveUnit();
-                                        playerUnits[x] = (cellList[players[x].GetX(), players[x].Gety()].createUnit(players[x].GetX(), players[x].Gety(),new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
-                                        if (cellList[oldx, oldy].GetisUnitPresent())
-                                        {
-                                            Debug.WriteLine("There IS a unit on the old coords "+oldx+","+oldy);
-                                        }
-                                        if (cellList[players[x].GetX(), players[x].Gety()].GetisUnitPresent())
-                                        {
-                                            Debug.WriteLine("There IS a unit on the new coords " + oldx + "," + oldy);
-                                        }
-                                    }
-                                }
+                                CommandReader.MovePlayer();
                                 
                                 break;
                             case "RPR":
