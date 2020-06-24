@@ -38,6 +38,7 @@ namespace DoomCloneV2
         List<Unit> playerUnits = new List<Unit>();
         String commandString = String.Empty;
         String commandStringsNew = String.Empty;
+        CommandReader cr;
         Color ColorFloor;
         Color ColorRoof;
         /// <summary>
@@ -60,6 +61,7 @@ namespace DoomCloneV2
             {
                 Globals.flags[i] = false;
             }
+            
             thisPlayer.playerView = Globals.ResizeImage(thisPlayer.playerView, this.Width, this.Height);
             Random rand = new Random();
             ColorFloor = Color.FromArgb(150, 255,200,0);
@@ -231,7 +233,7 @@ namespace DoomCloneV2
         private void RunCommands()
         {
 
-
+            CommandReader cR = new CommandReader(ref players,this,ref cellList,ref playerUnits,ref units);
             if (server || Globals.SinglePlayer)
             {
                 if (Globals.ticks % (Globals.MAXFRAMES) == 0)
@@ -319,56 +321,12 @@ namespace DoomCloneV2
                             //MOVE PLAYER
                             //
                             case "MVP":
-                                CommandReader.MovePlayer();
+                                cR.MovePlayer(playerID,commands[i]);
                                 
                                 break;
                             case "RPR":
+                                cR.RunProjectile(commands[i],ref thisClient,ref commandStringsNew,server);
                                 
-                                int projCount = Int32.Parse(commands[i].Substring(3, 3));
-                                Debug.WriteLine(" Firing "+ projCount+" Projectile's ");
-
-                                for (int projCounter = 0; projCounter < projCount; projCounter++)
-                                {
-                                    Debug.WriteLine("------FIRING PROJECTILE--------");
-
-                                    int unitNumber = Int32.Parse(commands[i].Substring((projCounter * 6) + 6, 3));
-                                    if (units[unitNumber].projs.Count <= projCounter)
-                                    {
-                                        Debug.WriteLine("Unit had less projectiles than counter, ending");
-                                        break;
-                                    }
-                                    int damage = units[unitNumber].projs[projCounter].GetDamage();
-
-                                    int returnCode = units[unitNumber].projs[projCounter].RunProjecticle(this.cellList);
-                                    Debug.WriteLine("Form1: Fireball returncode is :" + returnCode);
-
-                                    if (returnCode > -2)
-
-                                    {
-                                        Debug.WriteLine("Fireball hit something with returnCode" + returnCode);
-                                        units[unitNumber].projs.RemoveAt(projCounter);
-                                        projCounter--;
-
-                                    }
-                                    if (returnCode > -1)
-                                    {
-                                        Debug.WriteLine("Fireball hit player "+returnCode);
-                                        String ProjectileHitString = "SHP" + String.Format("{0:000}{1:000}", returnCode, damage);
-                                        if (!Globals.SinglePlayer && server)
-                                        {
-                                            Debug.WriteLine("Server sending " + ProjectileHitString);
-                                            this.thisClient.Write(ProjectileHitString);
-
-                                        }
-                                        if (Globals.SinglePlayer)
-                                        {
-                                            Debug.WriteLine("SinglePlayer sending " + ProjectileHitString);
-                                            commandStringsNew += ProjectileHitString;
-                                            Debug.WriteLine("Comand last idnex now "+commandString);
-                                        }
-                                    }
-                                    Debug.WriteLine("------END FIRING PROJECTILE--------");
-                                }
                                 
                                 break;
                             case "DIP":
