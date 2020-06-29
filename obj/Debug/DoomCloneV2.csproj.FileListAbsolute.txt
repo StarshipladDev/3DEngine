@@ -51,3 +51,4 @@ C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\DoomCloneV2.exe.config
 C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\DoomCloneV2.exe
 C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\DoomCloneV2.pdb
 C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Projectiles\Fireball\Flame.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\MapMaker.ico

@@ -54,6 +54,9 @@
     <Compile Include="Entity.cs" />
     <Compile Include="Globals.cs" />
     <Compile Include="Gun.cs" />
+    <Compile Include="MapGenForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Player.cs" />
     <Compile Include="Projectile.cs" />
     <Compile Include="Server.cs" />
@@ -149,6 +152,9 @@
     <Content Include="Resources\Images\Gun Parts\Sight\Sight_000_000_Boring.png" />
     <Content Include="Resources\Images\Gun Parts\Sight\Sight_000_001_Matrix.png" />
     <Content Include="Resources\Images\Gun Parts\Sight\Sight_000_001_RedDot.png" />
+    <Content Include="Resources\Images\MapMaker.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\Images\Projectiles\Fireball\Flame.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

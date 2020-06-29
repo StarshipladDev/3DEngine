@@ -39,6 +39,9 @@ namespace DoomCloneV2
             //Acctually run the program
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
+            Application.Run(new MapGenForm());
+
             Application.Run(new Form1());
 
             /*
