@@ -17,8 +17,12 @@ namespace DoomCloneV2
         private Panel drawingPanel;
         private bool draw = false;
         private Button createButton;
+        private int maxNodes = 6;
+        private int maxCells = 20;
+        Point[] initalNodes;
         Random rand = new Random();
         Cell[,] cellList;
+        bool[,] cellListSeePlayer;
         /// <summary>
         /// Clean up any resources being used.
         /// </summary>
@@ -35,8 +39,75 @@ namespace DoomCloneV2
         {
             InitializeComponent();
         }
+        private Cell OpenCell(Cell cell,int x, int y,bool seePlayer)
+        {
+
+            cellListSeePlayer[x, y] = seePlayer;
+            cell.setMat(false, cellList[x, y].GetCellColor());
+            return cell;
+        }
         public void DrawMap(object sender, EventArgs e)
         {
+            cellListSeePlayer = new bool[20, 20];
+            initalNodes = new Point[maxNodes];
+            //Set player to be one of 'x' nodes and then mark that node as 'seeablePlayer'
+            int x = rand.Next(20);
+            int y = rand.Next(20);
+            initalNodes[0] = new Point(x, y);
+            OpenCell(cellList[x, y], x, y,true);
+            //For Each MaxNode , set a random node to be non-mat 
+            for(int i=1; i< maxNodes;)
+            {
+                bool goodToGo=true;
+                int x2 = rand.Next(20);
+                int y2 = rand.Next(20);
+                for(int f = 0; f < i; f++)
+                {
+                    if (initalNodes[f].X==x2 || initalNodes[f].Y == y2)
+                    {
+                        goodToGo = false;
+                    }
+                }
+                if (goodToGo)
+                {
+
+                    cellList[x2, y2].setMat(false, cellList[x, y].GetCellColor());
+                    initalNodes[i] = new Point(x2,y2);
+                    i++;
+                }
+
+            }
+            //For each node, fill in the nearby nodes
+            for (int i = 0; i < maxNodes;i++)
+            {
+                //Select Room Size
+                bool isBigRoom = (rand.Next(4) == 0);
+                int sizeOfRoom = 1;
+                if (isBigRoom)
+                {
+                    sizeOfRoom = 2;
+                }
+                //X
+                for(int f =-sizeOfRoom; f < sizeOfRoom+1; f++)
+                {
+                    //Y
+                    for (int z = -sizeOfRoom; z < sizeOfRoom+1; z++){
+                        if(f+initalNodes[i].X>=0 && f+initalNodes[i].X < maxCells)
+                        {
+                            if (z + initalNodes[i].Y >= 0 && z + initalNodes[i].Y < maxCells)
+                            {
+                                bool seePlayer = false;
+                                if (i == 0)
+                                {
+                                    seePlayer = true;
+                                }
+                                OpenCell(cellList[f + initalNodes[i].X, z + initalNodes[i].Y], f + initalNodes[i].X, z + initalNodes[i].Y, seePlayer);
+                            }
+                        }
+                    }
+
+                }
+            }
             draw = true;
             Refresh();
         }
@@ -53,9 +124,17 @@ namespace DoomCloneV2
                     {
                         
                         Color c = cellList[i,f].GetCellColor();
-                        int x = (i * 5) + 50;
-                        int y = (f * 5) + 50;
-                        g.FillRectangle(new SolidBrush(c), new Rectangle(x, y, 50, 50));
+                        if (cellList[i, f].GetMat()==false)
+                        {
+                            c = Color.Red;
+                        }
+                        if (cellListSeePlayer[i,f] == true)
+                        {
+                            c = Color.Purple;
+                        }
+                        int x = (i * 10) + 50;
+                        int y = (f * 10) + 50;
+                        g.FillRectangle(new SolidBrush(c), new Rectangle(x, y, 10, 10));
                         Debug.WriteLine("Drawing Color with G " + c.G + " , at " + x + "," + y);
 
                     }
