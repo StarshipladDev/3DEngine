@@ -8,16 +8,29 @@ progress and follow better SDLC practice.
 
 ## Notes/Know Bugs:
 
+> On loading in as client, gun will be oversized. Press 'Q' to generate a new correct-sized gun.
+
 > The serverClients do not currently exit, so the program must be closed from task manager if doing multiplayer
 
->A significant ammount of input may result in some commands not being run
+> A significant amount of input may result in some commands not being run
 
->Walking into projectiles does not cause the projectiles to damage the player
+> Main Program will not start until 'MapMaker' is closed.
+
+> Walking into projectiles does not cause the projectiles to damage the player
 
 
 ## Features(Planned In Brackets)
 
-* Add features here :P (Will Do this by Next build - Gameplay build 26/07/2020)
+(Turn Based FPS Combat)
+2+ Player Multiplayer (If you know what IP Address to connect to)
+Animated Enemies
+(Animated Player Weapons)
+Randomly Generated Weapons
+(Random Map Generation)
+(Intractable log files and story)
+Multiple resolutions
+Multiple Editable Player Skins
+(Save states)
 
 ## View of progress
 **Displaying user view as 3d boxes**
@@ -37,7 +50,7 @@ Below is the process used to draw a '3d' world.
 
 **Displaying user view with scaled (based on distance) sprites**
 
-![DoomClone](ColorCellEnemies.PNG)
+![DoomClone](ColorCellsEnemies.PNG)
 
 **Displaying user view with 1:1 window size scaled 'player character view'**
 
@@ -50,7 +63,9 @@ Below is the process used to draw a '3d' world.
 
 ## Latest Update
 
-05/06/202 - Friendship build patch 1.
+30/06/2020 MapMaker Update
+
+![MapMakerImage](MapMaker.PNG)
 
 ## Next Build
 
@@ -62,9 +77,9 @@ Week ending 26/07/2020 - Gameplay Build
 
 * More enemies & Combat interactions
 
-*Full documentation & display controls
+* Full documentation & display controls
 
-*Add optional supporter skins.
+* Add optional supporter skins.
 
 ## Skill developing
 
@@ -81,7 +96,7 @@ I planned on this project improving my skills in the following:
 >Pixel Art and Animation
 
 ## Installing and Compiling:
-At the moment, the program can be run by doign the following:
+At the moment, the program can be run by doing the following:
 Unzip the "Executable" .ZIP folder.
 Unzipping the 'Resources.zip' folder & replacing the 'Executable's 'Resources' folder with it.
 
