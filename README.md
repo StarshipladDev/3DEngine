@@ -63,7 +63,7 @@ Below is the process used to draw a '3d' world.
 
 ## Latest Update
 
-30/06/2020 MapMaker Update
+07/07/2020 MapMaker Complete
 
 ![MapMakerImage](MapMaker.PNG)
 
