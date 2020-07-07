@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Net;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,7 +22,6 @@ namespace DoomCloneV2
         private int maxCells = 20;
         Point[] initalNodes;
         Random rand = new Random();
-        Cell[,] cellList;
         bool[,] cellListSeePlayer;
         /// <summary>
         /// Clean up any resources being used.
@@ -43,18 +43,19 @@ namespace DoomCloneV2
         {
 
             cellListSeePlayer[x, y] = seePlayer;
-            cell.setMat(false, cellList[x, y].GetCellColor());
+            cell.setMat(false, Globals.cellListGlobal[x, y].GetCellColor());
             return cell;
         }
         public void DrawMap(object sender, EventArgs e)
         {
+            ResetMap();
             cellListSeePlayer = new bool[20, 20];
             initalNodes = new Point[maxNodes];
             //Set player to be one of 'x' nodes and then mark that node as 'seeablePlayer'
             int x = rand.Next(20);
             int y = rand.Next(20);
             initalNodes[0] = new Point(x, y);
-            OpenCell(cellList[x, y], x, y,true);
+            OpenCell(Globals.cellListGlobal[x, y], x, y,true);
             //For Each MaxNode , set a random node to be non-mat 
             for(int i=1; i< maxNodes;)
             {
@@ -71,7 +72,7 @@ namespace DoomCloneV2
                 if (goodToGo)
                 {
 
-                    cellList[x2, y2].setMat(false, cellList[x, y].GetCellColor());
+                    Globals.cellListGlobal[x2, y2].setMat(false, Globals.cellListGlobal[x, y].GetCellColor());
                     initalNodes[i] = new Point(x2,y2);
                     i++;
                 }
@@ -101,30 +102,101 @@ namespace DoomCloneV2
                                 {
                                     seePlayer = true;
                                 }
-                                OpenCell(cellList[f + initalNodes[i].X, z + initalNodes[i].Y], f + initalNodes[i].X, z + initalNodes[i].Y, seePlayer);
+                                OpenCell(Globals.cellListGlobal[f + initalNodes[i].X, z + initalNodes[i].Y], f + initalNodes[i].X, z + initalNodes[i].Y, seePlayer);
                             }
                         }
                     }
 
                 }
             }
+
+            //Connect each inital node with pathways
+            Point currentPoint = initalNodes[0];
+            for (int i=0; i < initalNodes.Length-1; i++)
+            {
+                //Go Vertical First
+                if (rand.Next(2) == 0)
+                {
+                    currentPoint = DrawTunnel(currentPoint, initalNodes[i + 1], "vertical");
+                    currentPoint = DrawTunnel(currentPoint, initalNodes[i + 1], "horizontal");
+                }
+                else
+                {
+                    currentPoint = DrawTunnel(currentPoint, initalNodes[i + 1], "horizontal");
+                    currentPoint = DrawTunnel(currentPoint, initalNodes[i + 1], "vertical");
+                }
+            }
             draw = true;
             Refresh();
+        }
+        public Point DrawTunnel(Point startPoint,Point endPoint,String direction)
+        {
+            Debug.WriteLine("Drawing Tunnels");
+            int goal;
+            int start;
+            if (direction.Equals("vertical"))
+            {
+                start = startPoint.Y;
+                goal = endPoint.Y;
+            }
+            else
+            {
+                start = startPoint.X;
+                goal = endPoint.X;
+            }
+            int difference = goal - start;
+            bool goDown=false;
+            if (difference < 0)
+            {
+                goDown = true;
+                difference *= -1;
+            }
+
+            Debug.WriteLine("Difference is "+difference+" going "+direction);
+            for (int f = 0; f < difference; f++)
+            {
+                int change = f;
+                if (goDown)
+                {
+                    change *= -1;
+                }
+                if (direction.Equals("vertical"))
+                {
+                    int x = startPoint.X;
+                    int y = startPoint.Y + change;
+                    Debug.WriteLine("Tunnel Opening "+x+","+y+" to get to "+endPoint.ToString());
+                    Globals.cellListGlobal[x,y ] = OpenCell(Globals.cellListGlobal[startPoint.X, startPoint.Y + change], startPoint.X, startPoint.Y + change, true);
+                }
+                else
+                {
+
+                    int x = startPoint.X + change;
+                    int y = startPoint.Y ;
+                    Debug.WriteLine("Tunnel Opening " + x + "," + y + " to get to " + endPoint.ToString());
+                    Globals.cellListGlobal[startPoint.X + change, startPoint.Y] = OpenCell(Globals.cellListGlobal[startPoint.X + change, startPoint.Y], startPoint.X + change, startPoint.Y, true);
+                }
+            }
+            if (direction.Equals("vertical"))
+            {
+                return new Point(startPoint.X,endPoint.Y);
+            }
+            else
+            {
+                return new Point(endPoint.X, startPoint.Y);
+            }
         }
         public void paintDrawing(object sender, PaintEventArgs e)
         {
             if (draw)
             {
-
-                MessageBox.Show("Running Command!");
                 Graphics g = e.Graphics;
-                for (int i = 0; i < cellList.GetLength(0); i++)
+                for (int i = 0; i < Globals.cellListGlobal.GetLength(0); i++)
                 {
-                    for (int f = 0; f < cellList.GetLength(1); f++)
+                    for (int f = 0; f < Globals.cellListGlobal.GetLength(1); f++)
                     {
                         
-                        Color c = cellList[i,f].GetCellColor();
-                        if (cellList[i, f].GetMat()==false)
+                        Color c = Globals.cellListGlobal[i,f].GetCellColor();
+                        if (Globals.cellListGlobal[i, f].GetMat()==false)
                         {
                             c = Color.Red;
                         }
@@ -135,30 +207,31 @@ namespace DoomCloneV2
                         int x = (i * 10) + 50;
                         int y = (f * 10) + 50;
                         g.FillRectangle(new SolidBrush(c), new Rectangle(x, y, 10, 10));
-                        Debug.WriteLine("Drawing Color with G " + c.G + " , at " + x + "," + y);
 
                     }
                 }
                // g.Dispose();
             }
-            else
-            {
-                MessageBox.Show("Drawing trash!");
-                Graphics g = e.Graphics;
-                g.FillEllipse(new SolidBrush(Color.Brown), 0, 0, 500, 500);
-            }
            
+        }
+        public void ResetMap()
+        {
+            Globals.cellListGlobal = new Cell[20, 20];
+
+            Color floorColor = Color.FromArgb(255, rand.Next(254), rand.Next(254), rand.Next(254));
+            Color drawColor = Color.FromArgb(255, rand.Next(254), rand.Next(254), rand.Next(254));
+            Color roofColor = Color.FromArgb(255, rand.Next(254), rand.Next(254), rand.Next(254));
+            for (int i = 0; i < Globals.cellListGlobal.GetLength(0); i++)
+            {
+                for (int f = 0; f < Globals.cellListGlobal.GetLength(1); f++)
+                {
+                    Globals.cellListGlobal[i, f] = new Cell(true,drawColor,floorColor,roofColor);
+                }
+            }
         }
         public void  InitializeComponent()
         {
-            this.cellList = new Cell[20, 20];
-            for(int i=0; i < cellList.GetLength(0); i++)
-            {
-                for(int f= 0; f < cellList.GetLength(1); f++)
-                {
-                    cellList[i, f] = new Cell(true,Color.FromArgb(255,125,125,180), Color.FromArgb(255,0,rand.Next(204)+50,rand.Next(204)+50), Color.FromArgb(255, 125, 125, 180));
-                }
-            }
+            ResetMap();
             this.Icon = new Icon("Resources/Images/MapMaker.ico");
             this.SuspendLayout();
             //BUtton
@@ -192,6 +265,7 @@ namespace DoomCloneV2
             this.Controls.Add(buttonPanel);
             this.FormBorderStyle = FormBorderStyle.Fixed3D;
             this.ResumeLayout();
+            DrawMap(this, new EventArgs());
         }
     }
 }

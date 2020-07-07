@@ -17,7 +17,7 @@ namespace DoomCloneV2
     public static class Globals
     {
 
-        
+        public static Cell[,] cellListGlobal;
         public static bool SinglePlayer = true;
         public static bool drawGun = true;
         public static bool drawLines = false;
