@@ -24,7 +24,6 @@ namespace DoomCloneV2
     public partial class Form1 : Form
     {
         int playerID = 0;
-        Cell[,] cellList = new Cell[Globals.cellSize, Globals.cellSize];
         Player thisPlayer = new Player(4,4,1,0);
         CursorObject cursor = null;
         List<Player> players = new List<Player>();
@@ -38,6 +37,7 @@ namespace DoomCloneV2
         List<Unit> playerUnits = new List<Unit>();
         String commandString = String.Empty;
         String commandStringsNew = String.Empty;
+        CommandReader cr;
         Color ColorFloor;
         Color ColorRoof;
         /// <summary>
@@ -60,45 +60,45 @@ namespace DoomCloneV2
             {
                 Globals.flags[i] = false;
             }
+            
             thisPlayer.playerView = Globals.ResizeImage(thisPlayer.playerView, this.Width, this.Height);
+
+            //Put palyer at first empty area
+
             Random rand = new Random();
-            ColorFloor = Color.FromArgb(150, 255,200,0);
-            ColorRoof = Color.FromArgb(50, rand.Next(50), 255, rand.Next(50));
-            //Y
-            for (int i = 0; i < cellList.GetLength(0); i++)
+            bool playerDown = false;
+            while (!playerDown)
             {
 
-                //X
-                for (int f = 0; f < cellList.GetLength(1); f++)
+                int x = rand.Next(Globals.cellSize - 1) + 1;
+                int y= rand.Next(Globals.cellSize - 1) + 1;
+                if(!Globals.cellListGlobal[x, y].GetMat())
                 {
-                    if(f==0 || f == cellList.GetLength(0) - 1 || i==0 || i== cellList.GetLength(0) - 1)
-                    {
-                        cellList[i, f] = new Cell(true,Color.Gray, Color.Gray, Color.Gray);
-                    }
-                    else
-                    {
-                        cellList[i, f] = new Cell(false, Color.FromArgb(0, 0, 0, 0),ColorFloor,ColorRoof);
-                    }
-                    
+                    thisPlayer.SetX(x);
+                    thisPlayer.SetY(y);
+                    Globals.cellListGlobal[x, y].SetPlayer(0);
+                    playerDown = true;
                 }
+
             }
             //Set Random Cells
+            //07/07/2020 -  no blocks created, only enemies. 
             for(int i = 0;i < 9; i++){
                 int xForBlock = rand.Next(Globals.cellSize-1)+1;
                 int yForBLock= rand.Next(Globals.cellSize-1)+1;
-                if(i<4 && xForBlock!= thisPlayer.GetX() && yForBLock != thisPlayer.Gety())
+                if(i<0 && xForBlock!= thisPlayer.GetX() && yForBLock != thisPlayer.Gety())
                 {
-                    cellList[xForBlock,yForBLock].setMat(true, Color.Black);
+                    Globals.cellListGlobal[xForBlock,yForBLock].setMat(true, Color.Black);
                 }
                 else
                 {
-                    if (! cellList[xForBlock, yForBLock].GetisUnitPresent())
+                    if (! Globals.cellListGlobal[xForBlock, yForBLock].GetisUnitPresent() && ! Globals.cellListGlobal[xForBlock, yForBLock].GetMat())
                     {
-                        units.Add(cellList[xForBlock, yForBLock].createUnit(xForBlock, yForBLock, new Bitmap("Resources/Images/Enemy/Devil/Devil_Idle.png"),new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
+                        units.Add(Globals.cellListGlobal[xForBlock, yForBLock].createUnit(xForBlock, yForBLock, new Bitmap("Resources/Images/Enemy/Devil/Devil_Idle.png"),new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
                     }
                 }
             }
-            cellList[3, 2].setMat(true, Color.Gray);
+            Globals.cellListGlobal[3, 2].setMat(true, Color.Gray);
             //Print Cell
             PrintMap();
             InitializeComponent();
@@ -231,7 +231,7 @@ namespace DoomCloneV2
         private void RunCommands()
         {
 
-
+            CommandReader cR = new CommandReader(ref players,this,ref Globals.cellListGlobal,ref playerUnits,ref units);
             if (server || Globals.SinglePlayer)
             {
                 if (Globals.ticks % (Globals.MAXFRAMES) == 0)
@@ -319,93 +319,12 @@ namespace DoomCloneV2
                             //MOVE PLAYER
                             //
                             case "MVP":
-                                int x = Int32.Parse(commands[i].Substring(3, 2));
-                                int oldx = players[x].GetX();
-                                int oldy = players[x].Gety();
-                                Debug.WriteLine(" Moving Player " + x +String.Format(" From {0},{0} ", oldx,oldy ));
-                                if (x > -1 && x<players.Count)
-                                {
-                                    char directionChar= Char.Parse(commands[i].Substring(5, 1));
-                                    switch(directionChar)
-                                    {
-                                        case 'F':
-                                            Move("Forward", players[x]);
-                                            break;
-                                        case 'B':
-                                            Move("Back", players[x]);
-                                            break;
-                                        case 'L':
-                                            Move("Left", players[x]);
-                                            break;
-                                        case 'R':
-                                            Move("Right", players[x]);
-                                            break;
-                                    }
-                                    Debug.WriteLine(String.Format("To  {0},{1}.", players[x].GetX(), players[x].Gety()));
-                                    if (x != playerID)
-                                    {
-                                        Debug.WriteLine("Removing player on " + oldx + "," + oldy + ", setting new player on" + players[x].GetX() + "," + players[x].Gety()) ;
-                                        cellList[oldx, oldy].RemoveUnit();
-                                        playerUnits[x] = (cellList[players[x].GetX(), players[x].Gety()].createUnit(players[x].GetX(), players[x].Gety(),new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
-                                        if (cellList[oldx, oldy].GetisUnitPresent())
-                                        {
-                                            Debug.WriteLine("There IS a unit on the old coords "+oldx+","+oldy);
-                                        }
-                                        if (cellList[players[x].GetX(), players[x].Gety()].GetisUnitPresent())
-                                        {
-                                            Debug.WriteLine("There IS a unit on the new coords " + oldx + "," + oldy);
-                                        }
-                                    }
-                                }
+                                cR.MovePlayer(playerID,commands[i]);
                                 
                                 break;
                             case "RPR":
+                                cR.RunProjectile(commands[i],ref thisClient,ref commandStringsNew,server);
                                 
-                                int projCount = Int32.Parse(commands[i].Substring(3, 3));
-                                Debug.WriteLine(" Firing "+ projCount+" Projectile's ");
-
-                                for (int projCounter = 0; projCounter < projCount; projCounter++)
-                                {
-                                    Debug.WriteLine("------FIRING PROJECTILE--------");
-
-                                    int unitNumber = Int32.Parse(commands[i].Substring((projCounter * 6) + 6, 3));
-                                    if (units[unitNumber].projs.Count <= projCounter)
-                                    {
-                                        Debug.WriteLine("Unit had less projectiles than counter, ending");
-                                        break;
-                                    }
-                                    int damage = units[unitNumber].projs[projCounter].GetDamage();
-
-                                    int returnCode = units[unitNumber].projs[projCounter].RunProjecticle(this.cellList);
-                                    Debug.WriteLine("Form1: Fireball returncode is :" + returnCode);
-
-                                    if (returnCode > -2)
-
-                                    {
-                                        Debug.WriteLine("Fireball hit something with returnCode" + returnCode);
-                                        units[unitNumber].projs.RemoveAt(projCounter);
-                                        projCounter--;
-
-                                    }
-                                    if (returnCode > -1)
-                                    {
-                                        Debug.WriteLine("Fireball hit player "+returnCode);
-                                        String ProjectileHitString = "SHP" + String.Format("{0:000}{1:000}", returnCode, damage);
-                                        if (!Globals.SinglePlayer && server)
-                                        {
-                                            Debug.WriteLine("Server sending " + ProjectileHitString);
-                                            this.thisClient.Write(ProjectileHitString);
-
-                                        }
-                                        if (Globals.SinglePlayer)
-                                        {
-                                            Debug.WriteLine("SinglePlayer sending " + ProjectileHitString);
-                                            commandStringsNew += ProjectileHitString;
-                                            Debug.WriteLine("Comand last idnex now "+commandString);
-                                        }
-                                    }
-                                    Debug.WriteLine("------END FIRING PROJECTILE--------");
-                                }
                                 
                                 break;
                             case "DIP":
@@ -466,7 +385,7 @@ namespace DoomCloneV2
                                     Thread.Sleep(2000);
                                     Debug.WriteLine("Performing ServerClient Connection Request by making new player");
                                     players.Add(new Player(5 + players.Count, 5 + players.Count, 1,players.Count));
-                                    playerUnits.Add(cellList[5 + players.Count - 1, 5 + players.Count - 1].createUnit(5 + players.Count - 1, 5 + players.Count - 1, new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
+                                    playerUnits.Add(Globals.cellListGlobal[5 + players.Count - 1, 5 + players.Count - 1].createUnit(5 + players.Count - 1, 5 + players.Count - 1, new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
                                     Debug.WriteLine("ServerClient: Messaging out New Players. There are " + players.Count + " players");
                                     thisClient.Write("DEL");
                                     ///SEP - Set Player-SEP[00 PlayerID][000 Player X Position][000 Player Y Position] - Creates Player of set ID at set co-ords
@@ -480,7 +399,7 @@ namespace DoomCloneV2
                                         {
                                             for (int t = 0; t < units[r].projs.Count; t++)
                                             {
-                                                cellList[units[r].projs[t].x, units[r].projs[t].y].RemoveProjecticle();
+                                                Globals.cellListGlobal[units[r].projs[t].x, units[r].projs[t].y].RemoveProjecticle();
                                                 units[r].projs.RemoveAt(t);
                                                 t--;
 
@@ -494,7 +413,7 @@ namespace DoomCloneV2
                                         String builder = "SEW";
                                         for (int z = 0; z < Globals.cellSize; z++)
                                         {
-                                            builder += String.Format("{0:000}", cellList[f, z].GetCellType()) + String.Format("{0:000}", f) + String.Format("{0:000}", z);
+                                            builder += String.Format("{0:000}", Globals.cellListGlobal[f, z].GetCellType()) + String.Format("{0:000}", f) + String.Format("{0:000}", z);
                                         }
                                         thisClient.Write(builder);
                                     }
@@ -557,10 +476,10 @@ namespace DoomCloneV2
                                         int cellx = Int32.Parse(commands[i].Substring(((z * 9) + 6), 3));
                                         //  Debug.WriteLine("accessing " + ((z * 9) + 9) + " that is " + commands[i].Substring(((z * 9) + 9), 3));
                                         int celly = Int32.Parse(commands[i].Substring(((z * 9) + 9), 3));
-                                        cellList[cellx, celly] = new Cell(false, Color.FromArgb(0, 0, 0, 0), ColorFloor, ColorRoof);
+                                        Globals.cellListGlobal[cellx, celly] = new Cell(false, Color.FromArgb(0, 0, 0, 0), ColorFloor, ColorRoof);
                                         if (cellType == 1)
                                         {
-                                            cellList[cellx, celly].setMat(true, Color.Black);
+                                            Globals.cellListGlobal[cellx, celly].setMat(true, Color.Black);
                                         }
                                     }
                                 }
@@ -587,7 +506,7 @@ namespace DoomCloneV2
                                             enemyDead = "Resources/Images/Enemy/Devil/Devil_Death.png";
                                             break;
                                     }
-                                    units.Add(cellList[enemyX, enemyY].createUnit(enemyX, enemyY, new Bitmap(enemyAlive), new Bitmap(enemyDead)));
+                                    units.Add(Globals.cellListGlobal[enemyX, enemyY].createUnit(enemyX, enemyY, new Bitmap(enemyAlive), new Bitmap(enemyDead)));
                                     units[units.Count - 1].DealDamage(enemyDam);
                                     Debug.WriteLine("");
                                 }
@@ -651,8 +570,8 @@ namespace DoomCloneV2
                                         if (this.playerID!=-1 && this.playerID != playerID1)
                                         {
                                             Globals.flags[5] = true;
-                                            playerUnits.Add(cellList[playerx1, playery1].createUnit(playerx1, playery1,new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
-                                            cellList[playerx1, playery1].SetPlayer(players[playerID1].GetPlayerID());
+                                            playerUnits.Add(Globals.cellListGlobal[playerx1, playery1].createUnit(playerx1, playery1,new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
+                                            Globals.cellListGlobal[playerx1, playery1].SetPlayer(players[playerID1].GetPlayerID());
                                             Debug.WriteLine(this.thisClient.GetName() + ": Created new player @ " + playerx1 + "," + playery1);
                                         }
                                     }
@@ -661,7 +580,7 @@ namespace DoomCloneV2
                                         playerUnits.Add(null);
                                         this.thisPlayer = this.players[this.playerID];
                                         this.players[playerID1].SetID(this.playerID);
-                                        cellList[playerx1, playery1].SetPlayer(players[playerID1].GetPlayerID());
+                                        Globals.cellListGlobal[playerx1, playery1].SetPlayer(players[playerID1].GetPlayerID());
                                     }
                                 }
                                 break;
@@ -673,7 +592,7 @@ namespace DoomCloneV2
                                     this.players.Clear();
                                     this.units.Clear();
                                     this.playerUnits.Clear();
-                                    this.cellList = new Cell[Globals.cellSize, Globals.cellSize];
+                                    Globals.cellListGlobal = new Cell[Globals.cellSize, Globals.cellSize];
                                 }
                                 break;
                             case "DAL":
@@ -781,44 +700,44 @@ namespace DoomCloneV2
                                     pickY = (offset - halfScan) + loopFromLeft;
                                     pickX = (thisPlayer.GetX() - 1 )+ (maxDepth - loopFromBack);
                                 }
-                                if(pickX>=0 && pickX<cellList.GetLength(0) && pickY>=0 && pickY < cellList.GetLength(1))
+                                if(pickX>=0 && pickX<Globals.cellListGlobal.GetLength(0) && pickY>=0 && pickY < Globals.cellListGlobal.GetLength(1))
                                 {
-                                    //if (cellList[pickX,pickY].GetisUnitPresent()== unitsa)
+                                    //if (Globals.cellListGlobal[pickX,pickY].GetisUnitPresent()== unitsa)
                                     {
                                         bool MatFront = false;
-                                        if (loopFromBack == maxDepth - 1 && loopFromLeft == 1 && cellList[pickX, pickY].GetMat())
+                                        if (loopFromBack == maxDepth - 1 && loopFromLeft == 1 && Globals.cellListGlobal[pickX, pickY].GetMat())
                                         {
                                             MatFront = true;
                                         }
                                         if (thisPlayer.dir == Directions.UP && pickX > 0 && centreLine == 2)
                                         {
-                                            if /*(cellList[pickX - 1, pickY].GetisUnitPresent() || */(cellList[pickX - 1, pickY].GetMat())
+                                            if /*(Globals.cellListGlobal[pickX - 1, pickY].GetisUnitPresent() || */(Globals.cellListGlobal[pickX - 1, pickY].GetMat())
                                             {
                                                 matToLeft = true;
                                             }
                                         }
-                                        else if (thisPlayer.dir == Directions.DOWN && pickX < cellList.GetLength(0) - 1 && centreLine == 2)
+                                        else if (thisPlayer.dir == Directions.DOWN && pickX < Globals.cellListGlobal.GetLength(0) - 1 && centreLine == 2)
                                         {
-                                            if /*(cellList[pickX + 1, pickY].GetisUnitPresent() ||*/(cellList[pickX + 1, pickY].GetMat())
+                                            if /*(Globals.cellListGlobal[pickX + 1, pickY].GetisUnitPresent() ||*/(Globals.cellListGlobal[pickX + 1, pickY].GetMat())
                                             {
                                                 matToLeft = true;
                                             }
                                         }
                                         else if (thisPlayer.dir == Directions.LEFT && pickY > 0 && centreLine == 2)
                                         {
-                                            if /*(cellList[pickX, pickY + 1].GetisUnitPresent() || */(cellList[pickX, pickY + 1].GetMat())
+                                            if /*(Globals.cellListGlobal[pickX, pickY + 1].GetisUnitPresent() || */(Globals.cellListGlobal[pickX, pickY + 1].GetMat())
                                             {
                                                 matToLeft = true;
                                             }
                                         }
-                                        else if (thisPlayer.dir == Directions.RIGHT && pickY < cellList.GetLength(0) - 1 && centreLine == 2)
+                                        else if (thisPlayer.dir == Directions.RIGHT && pickY < Globals.cellListGlobal.GetLength(0) - 1 && centreLine == 2)
                                         {
-                                            if /*(cellList[pickX, pickY - 1].GetisUnitPresent() || */(cellList[pickX, pickY - 1].GetMat())
+                                            if /*(Globals.cellListGlobal[pickX, pickY - 1].GetisUnitPresent() || */(Globals.cellListGlobal[pickX, pickY - 1].GetMat())
                                             {
                                                 matToLeft = true;
                                             }
                                         }
-                                        cellList[pickX, pickY].Draw(g, centreLine, loopFromBack, loopFromLeft, maxDepth, screenWidth, screenHeight, Globals.drawLines, matToLeft, MatFront);
+                                        Globals.cellListGlobal[pickX, pickY].Draw(g, centreLine, loopFromBack, loopFromLeft, maxDepth, screenWidth, screenHeight, Globals.drawLines, matToLeft, MatFront);
                                     }
                            
                                 }
@@ -928,11 +847,11 @@ namespace DoomCloneV2
             }
             else if (thisPlayer.dir == Directions.DOWN)
             {
-                picker = cellList.GetLength(1)- thisPlayer.Gety() ;
+                picker = Globals.cellListGlobal.GetLength(1)- thisPlayer.Gety() ;
             }
             else if (thisPlayer.dir == Directions.RIGHT)
             {
-                picker = cellList.GetLength(0)-thisPlayer.GetX();
+                picker = Globals.cellListGlobal.GetLength(0)-thisPlayer.GetX();
             }
             else
             {
@@ -1036,19 +955,19 @@ namespace DoomCloneV2
             int y = p.Gety();
             if (right)
             {
-                if (x < cellList.GetLength(1) - 1)
+                if (x < Globals.cellListGlobal.GetLength(1) - 1)
                 {
-                    if (!cellList[x + 1, y].GetMat() && !cellList[x + 1, y].GetisUnitPresent())
+                    if (!Globals.cellListGlobal[x + 1, y].GetMat() && !Globals.cellListGlobal[x + 1, y].GetisUnitPresent())
                     {
-                        Debug.WriteLine("CELL MOVE:Cell "+x+","+y+" Player ID was "+cellList[x,y].GetPlayer());
-                        cellList[x, y].SetPlayer(-1);
+                        Debug.WriteLine("CELL MOVE:Cell "+x+","+y+" Player ID was "+Globals.cellListGlobal[x,y].GetPlayer());
+                        Globals.cellListGlobal[x, y].SetPlayer(-1);
 
-                        Debug.WriteLine("CELL MOVE:Cell " + x + "," + y + " Player ID is Noe " + cellList[x, y].GetPlayer());
+                        Debug.WriteLine("CELL MOVE:Cell " + x + "," + y + " Player ID is Noe " + Globals.cellListGlobal[x, y].GetPlayer());
 
-                        Debug.WriteLine("CELL MOVE:Cell " + (x +1)+ "," + y + " Player ID was " + cellList[x, y].GetPlayer()+"before move");
-                        cellList[x + 1, y].SetPlayer(p.GetPlayerID());
+                        Debug.WriteLine("CELL MOVE:Cell " + (x +1)+ "," + y + " Player ID was " + Globals.cellListGlobal[x, y].GetPlayer()+"before move");
+                        Globals.cellListGlobal[x + 1, y].SetPlayer(p.GetPlayerID());
 
-                        Debug.WriteLine("CELL MOVE:Cell " + (x+1) + "," + y + " Player ID is now " + cellList[x, y].GetPlayer());
+                        Debug.WriteLine("CELL MOVE:Cell " + (x+1) + "," + y + " Player ID is now " + Globals.cellListGlobal[x, y].GetPlayer());
                         p.SetX(p.GetX() + 1);
                     }
                 }
@@ -1057,10 +976,10 @@ namespace DoomCloneV2
             {
                 if (x > 1)
                 {
-                    if (!cellList[x - 1, y].GetMat() && !cellList[x - 1, y].GetisUnitPresent())
+                    if (!Globals.cellListGlobal[x - 1, y].GetMat() && !Globals.cellListGlobal[x - 1, y].GetisUnitPresent())
                     {
-                        cellList[x, y].SetPlayer(-1);
-                        cellList[x - 1, y].SetPlayer(p.GetPlayerID());
+                        Globals.cellListGlobal[x, y].SetPlayer(-1);
+                        Globals.cellListGlobal[x - 1, y].SetPlayer(p.GetPlayerID());
                         p.SetX(p.GetX() - 1);
                     }
                 }
@@ -1078,10 +997,10 @@ namespace DoomCloneV2
             {
                 if (y > 1)
                 {
-                    if (!cellList[x, y - 1].GetMat() && !cellList[x, y - 1].GetisUnitPresent())
+                    if (!Globals.cellListGlobal[x, y - 1].GetMat() && !Globals.cellListGlobal[x, y - 1].GetisUnitPresent())
                     {
-                        cellList[x, y].SetPlayer(-1);
-                        cellList[x, y-1].SetPlayer(p.GetPlayerID());
+                        Globals.cellListGlobal[x, y].SetPlayer(-1);
+                        Globals.cellListGlobal[x, y-1].SetPlayer(p.GetPlayerID());
                         p.SetY(p.Gety() - 1);
                     }
                 }
@@ -1089,12 +1008,12 @@ namespace DoomCloneV2
             }
             else
             {
-                if (y < cellList.GetLength(1) - 1)
+                if (y < Globals.cellListGlobal.GetLength(1) - 1)
                 {
-                    if (!cellList[x, y + 1].GetMat() && !cellList[x, y + 1].GetisUnitPresent())
+                    if (!Globals.cellListGlobal[x, y + 1].GetMat() && !Globals.cellListGlobal[x, y + 1].GetisUnitPresent())
                     {
-                        cellList[x, y].SetPlayer(-1);
-                        cellList[x, y + 1].SetPlayer(p.GetPlayerID());
+                        Globals.cellListGlobal[x, y].SetPlayer(-1);
+                        Globals.cellListGlobal[x, y + 1].SetPlayer(p.GetPlayerID());
                         p.SetY(p.Gety() + 1);
                     }
                 }
@@ -1263,19 +1182,19 @@ namespace DoomCloneV2
             this.Invalidate();
         }
         /// <summary>
-        /// A debug function used to print the state of the Form1 <see cref="Form1.cellList"/> at call
+        /// A debug function used to print the state of the Form1 <see cref="Form1.Globals.cellListGlobal"/> at call
         /// </summary>
         private void PrintMap()
         {
             //Y
-            for (int f = 0; f < cellList.GetLength(0); f++)
+            for (int f = 0; f < Globals.cellListGlobal.GetLength(0); f++)
             {
                 Debug.Write("\n\n");
                 //X
-                for (int i = 0; i < cellList.GetLength(1); i++)
+                for (int i = 0; i < Globals.cellListGlobal.GetLength(1); i++)
                 {
                     Debug.Write("[");
-                    if (cellList[i,f].GetMat())
+                    if (Globals.cellListGlobal[i,f].GetMat())
                     {
                         Debug.Write(" * ");
                     }
@@ -1284,11 +1203,11 @@ namespace DoomCloneV2
                         Debug.Write("<3 ");
                     }
 
-                    else if (cellList[i, f].GetPlayer() > -1)
+                    else if (Globals.cellListGlobal[i, f].GetPlayer() > -1)
                     {
-                        Debug.Write(" " + cellList[i, f].GetPlayer() + " ");
+                        Debug.Write(" " + Globals.cellListGlobal[i, f].GetPlayer() + " ");
                     }
-                    else if (cellList[i, f].GetisUnitPresent())
+                    else if (Globals.cellListGlobal[i, f].GetisUnitPresent())
                     {
                         Debug.Write("^-^");
                     }

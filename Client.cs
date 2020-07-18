@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace DoomCloneV2
 {
-    class Client
+    public class Client
     {
         TcpClient clientConnection=null;
         NetworkStream ns = null;

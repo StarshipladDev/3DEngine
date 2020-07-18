@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Windows.Forms;
 
 namespace DoomCloneV2
 {
@@ -32,6 +33,7 @@ namespace DoomCloneV2
         {
             this.Icon = new Icon("Resources/Images/DoomClone.ico");
             this.SuspendLayout();
+            this.FormBorderStyle = FormBorderStyle.None;
             this.SetStyle(
                System.Windows.Forms.ControlStyles.UserPaint |
                System.Windows.Forms.ControlStyles.AllPaintingInWmPaint |

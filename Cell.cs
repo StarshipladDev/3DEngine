@@ -39,6 +39,10 @@ namespace DoomCloneV2
             return this.playerOnCellIndex;
             
         }
+        public Color GetCellColor()
+        {
+            return this.floorColor;
+        }
         public int GetCellType()
         {
             return type;

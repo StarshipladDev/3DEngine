@@ -69,6 +69,7 @@ namespace DoomCloneV2
         }
         public void CreateProjectile(String projecticleType,int targetX, int targetY)
         {
+            if (this.x < 0 && this.y < 0) { return; }
 
             Debug.WriteLine("-------------");
             Debug.WriteLine("New "+ projecticleType + " created firing at "+targetX+","+targetY);
