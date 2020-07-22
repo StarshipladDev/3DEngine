@@ -30,8 +30,13 @@ namespace DoomCloneV2
         Directions switcher;
         System.Timers.Timer aTimer;
         int shotsFired=0;
+        int turnCount = 0;
+        int playerDoneCount = 0;
         bool server = false;
         bool cursorUp = false;
+        bool serverTurn = false;
+        bool[] playerEndTurnArray = new bool[20];
+        bool lockPlayer = false;
         Client thisClient = null;
         List<Unit> units = new List<Unit>();
         List<Unit> playerUnits = new List<Unit>();
@@ -182,6 +187,21 @@ namespace DoomCloneV2
             }
         }
         /// <summary>
+        /// ServerSend is a utility feature to make actions that should be matched across all palyers occur.
+        /// </summary>
+        /// <param name="message"></param>
+        public void ServerSend(String message)
+        {
+            if (!Globals.SinglePlayer)
+            {
+                this.thisClient.Write(message);
+            }
+            else
+            {
+                AddToCommandString(message);
+            }
+        }
+        /// <summary>
         /// FormUpdate is used to perform the graphical calcualtiosn for where various objects will appear on the screen, and call their
         /// respective drawing functions in order.
         /// Commands must be added as a list from inside
@@ -227,16 +247,20 @@ namespace DoomCloneV2
         ///RP= Run Projectiles
         /// RPR - Run Projectile -RPR[000]EnemyIdPrjecticleCount][000 EnemyId][000 Projectile ID]- Runs stated projectile's 'RunProjectile' function.
         ///
+        /// 
+        ///----------
+        ///ET - End Turn
+        ///ETP - End Turn Player - ETP[000][PlayerID] - Lets server know player has ended turn
+        ///ETS - End Turn Server -ETS -Let's players Know Server is finished
         ///
         private void RunCommands()
         {
-
             CommandReader cR = new CommandReader(ref players,this,ref Globals.cellListGlobal,ref playerUnits,ref units);
             if (server || Globals.SinglePlayer)
             {
-                if (Globals.ticks % (Globals.MAXFRAMES) == 0)
+                //Do things That happen on the server side
+                if (serverTurn)
                 {
-
                     for (int i = 0; i < units.Count; i++)
                     {
                         if (units[i].projs.Count > 0)
@@ -244,47 +268,33 @@ namespace DoomCloneV2
                             String commander = "RPR" + String.Format("{0:000}", units[i].projs.Count);
                             for (int f = 0; f < units[i].projs.Count; f++)
                             {
-
                                 commander += String.Format("{0:000}{1:000}", i, f);
-
-
                             }
-
-                            if (Globals.SinglePlayer)
-                            {
-                                AddToCommandString(commander);
-                            }
-                            else
-                            {
-                                this.thisClient.Write(commander);
-                            }
+                            ServerSend(commander);
                         }
-                        
-                    }
-                }
-                /*
-             * Projectile implementation
-             * */
-                if (Globals.ticks % (Globals.MAXFRAMES * 4) == 0)
-                {
 
-                    Random rand = new Random();
-                    int playerNum = rand.Next(players.Count);
-                    int unitNum = rand.Next(units.Count);
-                    if (rand.Next(10) > 1 && units[unitNum].alive)
+                    }
+
+                    /*
+                     * Projectile implementation
+                    * */
+                    if (turnCount % 4 == 0)
                     {
-                        if (!Globals.SinglePlayer)
-                        {
-                            this.thisClient.Write("CRP" + String.Format("{0:000}{1:000}{2:000}", unitNum, players[playerNum].GetX(), players[playerNum].Gety()));
 
-                        }
-                        else
+                        Random rand = new Random();
+                        int playerNum = rand.Next(players.Count);
+                        int unitNum = rand.Next(units.Count);
+                        if (rand.Next(10) > 1 && units[unitNum].alive)
                         {
-                            AddToCommandString("CRP" + String.Format("{0:000}{1:000}{2:000}", unitNum, players[playerNum].GetX(), players[playerNum].Gety()));
+                            ServerSend("CRP" + String.Format("{0:000}{1:000}{2:000}", unitNum, players[playerNum].GetX(), players[playerNum].Gety()));
                         }
+
                     }
-
+                    ServerSend("ETS");
+                    serverTurn = false;
                 }
+
+               
                 
             }
             
@@ -325,6 +335,36 @@ namespace DoomCloneV2
                             case "RPR":
                                 cR.RunProjectile(commands[i],ref thisClient,ref commandStringsNew,server);
                                 
+                                break;
+                            //
+                            //END SERVER TURN
+                            //
+                            case "ETS":
+                                lockPlayer = false;
+                                break;
+                            //
+                            //END TURN PLAYER
+                            //
+                            case "ETP":
+                                if(server || Globals.SinglePlayer)
+                                {
+                                    int playerIndex = Int32.Parse(commands[i].Substring(3, 3));
+                                    if (!playerEndTurnArray[playerIndex])
+                                    {
+
+                                        playerEndTurnArray[playerIndex] = true;
+                                        playerDoneCount++;
+                                    }
+                                    if (playerDoneCount == players.Count())
+                                    {
+                                        for(int playerCounter = 0; playerCounter < playerEndTurnArray.Length; playerCounter++)
+                                        {
+                                            playerEndTurnArray[playerCounter] = false;
+                                        }
+                                        playerDoneCount = 0;
+                                        serverTurn = true;
+                                    }
+                                }
                                 
                                 break;
                             case "DIP":
@@ -374,7 +414,9 @@ namespace DoomCloneV2
                                     Debug.Write(commands[i].Substring(1, commands[i].Length - 1));
                                 }
                                 break;
-                                //Connect
+                            //
+                            //PLAYER CONNECTED
+                            //
                             case "COC":
                                 //
                                 //NEW PLAYER ADDED - SERVER HANDLING
@@ -610,6 +652,7 @@ namespace DoomCloneV2
                 }
             }
             commandString = String.Empty;
+
         }
             /// <summary>
             /// FormUpdate is used to perform the graphical calcualtiosn for where various objects will appear on the screen, and call their
@@ -1041,6 +1084,11 @@ namespace DoomCloneV2
                 this.thisClient.Write("DIP" + String.Format("{0:00}", this.thisClient.GetID()) + direction);
             }
         }
+        private void SendTurnOver()
+        {
+            ServerSend("ETP"+String.Format("{0:000}",this.playerID));
+            lockPlayer=true;
+        }
         /// <summary>
         /// OnKeyUp handles key presses done while a <see cref="Form1"/> isntance is the active window
         /// </summary>
@@ -1051,12 +1099,11 @@ namespace DoomCloneV2
             bool servermade = false;
             Directions playersdir = thisPlayer.dir;
             Thread f = null;
+            //Non-player Commands
             switch (e.KeyCode)
             {
-                case Keys.Space :
-
-                    this.Text = "DOOMCLoneV2Lines";
-                    Globals.drawLines = !Globals.drawLines;
+                case Keys.Space:
+                    SendTurnOver();
                     break;
                 case Keys.D1:
                     this.Text = "DOOMCLoneV2Lines";
@@ -1073,33 +1120,6 @@ namespace DoomCloneV2
                 case Keys.D4:
                     this.Text = "DoomClone ";
                     Globals.drawText = !Globals.drawText;
-                    break;
-                case Keys.S:
-
-                    MoveCommand('B');
-                    break;
-                case Keys.W:
-
-                    MoveCommand('F');
-                    break;
-                case Keys.D:
-
-                    MoveCommand('R');
-                    break;
-                case Keys.A:
-                    MoveCommand('L');
-                    break;
-                case Keys.Q:
-                    this.thisPlayer.RefreshGun();
-                    RefreshPlayerView(this.thisPlayer.playerView);
-                    break;
-                case Keys.U:
-                    Globals.flags[0] = !Globals.flags[0];
-                    for (int i = 3; i < Globals.flags.Length; i++)
-                    {
-                        Globals.flags[i] = false;
-                    }
-                    PrintMap();
                     break;
                 //Server
                 case Keys.O:
@@ -1137,12 +1157,12 @@ namespace DoomCloneV2
                     break;
                 case Keys.L:
                     Globals.SinglePlayer = false;
-                    
-                        f = new Thread(ThreadFunctions.ClientThread);
-                        object args;
-                        Client cl = new Client(Globals.port, Globals.Address, "The Client2",1);
-                        args = cl;
-                        f.Start(args);
+
+                    f = new Thread(ThreadFunctions.ClientThread);
+                    object args;
+                    Client cl = new Client(Globals.port, Globals.Address, "The Client2", 1);
+                    args = cl;
+                    f.Start(args);
                     break;
                 case Keys.K:
                     if (Globals.SinglePlayer)
@@ -1160,6 +1180,40 @@ namespace DoomCloneV2
                         this.thisClient.Write("ML1");
                     }
                     break;
+            }
+            //Only action if not Serverturn
+            if (!lockPlayer)
+            {
+                switch (e.KeyCode)
+                {
+                    case Keys.S:
+                        MoveCommand('B');
+                        break;
+                    case Keys.W:
+
+                        MoveCommand('F');
+                        break;
+                    case Keys.D:
+
+                        MoveCommand('R');
+                        break;
+                    case Keys.A:
+                        MoveCommand('L');
+                        break;
+                    case Keys.Q:
+                        this.thisPlayer.RefreshGun();
+                        RefreshPlayerView(this.thisPlayer.playerView);
+                        break;
+                    case Keys.U:
+                        Globals.flags[0] = !Globals.flags[0];
+                        for (int i = 3; i < Globals.flags.Length; i++)
+                        {
+                            Globals.flags[i] = false;
+                        }
+                        PrintMap();
+                        break;
+                }
+                    
             }
             if (servermade == true)
             {
@@ -1371,7 +1425,7 @@ namespace DoomCloneV2
             
         }
     }
-   
+  
     public enum Directions
     {
         UP,DOWN,LEFT,RIGHT,NULL
