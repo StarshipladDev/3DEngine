@@ -97,6 +97,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Addresses.txt" />
     <Content Include="Changes.txt" />
     <Content Include="config.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -110,7 +111,49 @@
     <Content Include="Resources\Images\Enemy\Devil\Devil_Idle.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Images\Friendly\Player1\Player1_Idle.png">
+    <Content Include="Resources\Images\Friendly\Player01\Player01_Death.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player01\Player01_Idle.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player01\Player01_IdleOld.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player02\Player02_Death.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player02\Player02_Idle.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player03\Player03_Death.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player03\Player03_Fire.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player03\Player03_Idle.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player04\Player04_Death.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player04\Player04_Idle.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player05\Player05_Death.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player05\Player05_Fire.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player05\Player05_Idle.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player06\Player06_Death.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Friendly\Player06\Player06_Idle.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\Gun Parts\Arm\Arm_001_000_Camo.png" />

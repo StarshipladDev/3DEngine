@@ -24,7 +24,7 @@ namespace DoomCloneV2
     public partial class Form1 : Form
     {
         int playerID = 0;
-        Player thisPlayer = new Player(4,4,1,0);
+        Player thisPlayer;
         CursorObject cursor = null;
         List<Player> players = new List<Player>();
         Directions switcher;
@@ -45,12 +45,14 @@ namespace DoomCloneV2
         CommandReader cr;
         Color ColorFloor;
         Color ColorRoof;
+        Color colorWall;
         /// <summary>
         /// This constructor creates a Form. Parameters should be specified in <see cref="Globals"/>
         /// </summary>
         public Form1()
         {
             ReadConfig();
+            thisPlayer = new Player(4, 4, 1, 0,"Player"+String.Format("{0:00}",Globals.playerFileName));
             playerUnits.Add(null);
             players.Add(thisPlayer);
             thisPlayer = players[0];
@@ -88,25 +90,30 @@ namespace DoomCloneV2
             }
             //Set Random Cells
             //07/07/2020 -  no blocks created, only enemies. 
-            for(int i = 0;i < 9; i++){
-                int xForBlock = rand.Next(Globals.cellSize-1)+1;
-                int yForBLock= rand.Next(Globals.cellSize-1)+1;
-                if(i<0 && xForBlock!= thisPlayer.GetX() && yForBLock != thisPlayer.Gety())
-                {
-                    Globals.cellListGlobal[xForBlock,yForBLock].setMat(true, Color.Black);
-                }
-                else
-                {
-                    if (! Globals.cellListGlobal[xForBlock, yForBLock].GetisUnitPresent() && ! Globals.cellListGlobal[xForBlock, yForBLock].GetMat())
-                    {
-                        units.Add(Globals.cellListGlobal[xForBlock, yForBLock].createUnit(xForBlock, yForBLock, new Bitmap("Resources/Images/Enemy/Devil/Devil_Idle.png"),new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
-                    }
-                }
+            for (int i = 0; i < 9; i++)
+            {
+                Point enemyPoint = getFreeCell(rand);
+
+                Globals.cellListGlobal[enemyPoint.X,enemyPoint.Y].setMat(true, Color.Black);
             }
-            Globals.cellListGlobal[3, 2].setMat(true, Color.Gray);
-            //Print Cell
-            PrintMap();
+                //Print Cell
+                PrintMap();
             InitializeComponent();
+        }
+        public Point getFreeCell(Random rand)
+        {
+
+            int xForBlock = rand.Next(Globals.cellSize - 2) + 1;
+            int yForBLock = rand.Next(Globals.cellSize - 2) + 1;
+            while (Globals.cellListGlobal[xForBlock, yForBLock].GetisUnitPresent() || Globals.cellListGlobal[xForBlock, yForBLock].GetMat())
+            {
+
+                 xForBlock = rand.Next(Globals.cellSize - 2) + 1;
+                 yForBLock = rand.Next(Globals.cellSize - 2) + 1;
+            }
+            Debug.WriteLine("Clinet: Got co-ords"+xForBlock+","+yForBLock);
+            return new Point(xForBlock,yForBLock);
+
         }
         private void AddToCommandString(String s)
         {
@@ -128,10 +135,13 @@ namespace DoomCloneV2
                 configXml.InnerXml = configFileContents;
                 Debug.WriteLine("Port is :"+configXml.SelectSingleNode("Config/Port").InnerText);
                 Debug.WriteLine("Address is :" + configXml.SelectSingleNode("Config/ServerAddress").InnerText);
+
                 Debug.WriteLine("Address is :" + configXml.SelectSingleNode("Config/ClientName").InnerText);
                 Globals.port = configXml.SelectSingleNode("Config/Port").InnerText;
                 Globals.Address = configXml.SelectSingleNode("Config/ServerAddress").InnerText;
                 Globals.clientName= configXml.SelectSingleNode("Config/ClientName").InnerText;
+                Globals.playerFileName = configXml.SelectSingleNode("Config/PlayerFileName").InnerText;
+                Debug.WriteLine("PlayerFileName is :" + String.Format("{0:00}", Int32.Parse(Globals.playerFileName)));
 
 
             }
@@ -186,6 +196,14 @@ namespace DoomCloneV2
                 Globals.readyToDraw = true;
             }
         }
+        public string GetColourString(Color c)
+        {
+            String returnString = "";
+            returnString += String.Format("{0:000}",c.R);
+            returnString += String.Format("{0:000}", c.G);
+            returnString += String.Format("{0:000}", c.B);
+            return returnString;
+        }
         /// <summary>
         /// ServerSend is a utility feature to make actions that should be matched across all palyers occur.
         /// </summary>
@@ -225,11 +243,16 @@ namespace DoomCloneV2
         ///SHP - Deal Damage To Player -SHP[000 PlayerIndex][000 Damage]
         ///
         /// ------
-        ///SE - Set GameWorld
-        ///SEP - Set Player-SEP[00 PlayerID][000 Player X Position][000 Player Y Position][char(1) Player direction] - Creates Player of set ID at set co-ords
+        ///CO - Connect
+        ///COC - Tell Server player 'x' Connected - COC[00 - PlayerID][00- Player Skin]
+        /// 
+        /// 
+        /// ------
+        ///SE - Set GameWorld / Connect
+        ///SEP - Set Player-SEP[00 PlayerID][000 Player X Position][000 Player Y Position][char(1) Player direction][00 PlayerCharacterFIle] - Creates Player of set ID at set co-ords
         ///SEW - Set World Block - SEW([000 BlockType][000 X Pos][000 Y Pos] x GLobals.MaxCell)- Creates Block of type 't' at location 'x','y'
         ///SEE - Set Enemy - SEE[000 Enemy Type][000 X Pos][000 Y Pos][0000 Deal Damage] - Places enemy and deals damage
-        ///
+        ///SEC - Set Colour - SEX[ 3 X [000000000 RGB  values in a '000' format] in order- wall colour, floor colour, roof colour]
         ///-------
         ///PR- Print
         ///PRT - Print Text - PRT[MessageString]
@@ -426,8 +449,13 @@ namespace DoomCloneV2
                                     Globals.Pause=true;
                                     Thread.Sleep(2000);
                                     Debug.WriteLine("Performing ServerClient Connection Request by making new player");
-                                    players.Add(new Player(5 + players.Count, 5 + players.Count, 1,players.Count));
-                                    playerUnits.Add(Globals.cellListGlobal[5 + players.Count - 1, 5 + players.Count - 1].createUnit(5 + players.Count - 1, 5 + players.Count - 1, new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
+
+                                    String fileName =commands[i].Substring(5, 2);
+                                    int filenameInt = Int32.Parse(fileName);
+                                    fileName = "Player" + fileName;
+                                    Point playerNewPoint = getFreeCell(new Random());
+                                    players.Add(new Player(playerNewPoint.X,playerNewPoint.Y, 1,players.Count,fileName));
+                                    playerUnits.Add(Globals.cellListGlobal[playerNewPoint.X, playerNewPoint.Y].createUnit(playerNewPoint.X, playerNewPoint.Y, new Bitmap("Resources/Images/Friendly/"+fileName+"/"+fileName+"_Idle.png"), new Bitmap("Resources/Images/Friendly/"+fileName+"/"+fileName+"_Death.png")));
                                     Debug.WriteLine("ServerClient: Messaging out New Players. There are " + players.Count + " players");
                                     thisClient.Write("DEL");
                                     ///SEP - Set Player-SEP[00 PlayerID][000 Player X Position][000 Player Y Position] - Creates Player of set ID at set co-ords
@@ -499,8 +527,11 @@ namespace DoomCloneV2
                                                 break;
                                         }
                                         Debug.WriteLine(this.thisClient.GetName() + ": Created new player @ " + playerx + "," + playery + " via serverClient");
-                                        thisClient.Write("SEP" + String.Format("{0:00}", playerID) + String.Format("{0:000}", playerx) + String.Format("{0:000}", playery)+ directionOfPlayer);
-
+                                        thisClient.Write("SEP" + String.Format("{0:00}", playerID) + String.Format("{0:000}", playerx) + String.Format("{0:000}", playery)+ directionOfPlayer+String.Format("{0:00}",filenameInt));
+                                        String colorString = "";
+                                        colorString += "SEC";
+                                        colorString += GetColourString(Globals.drawColor) + GetColourString(Globals.floorColor) + GetColourString(Globals.roofColor);
+                                        thisClient.Write(colorString);
                                     }
                                     thisClient.Write("DAL");
                                     Globals.Pause = false;
@@ -518,10 +549,10 @@ namespace DoomCloneV2
                                         int cellx = Int32.Parse(commands[i].Substring(((z * 9) + 6), 3));
                                         //  Debug.WriteLine("accessing " + ((z * 9) + 9) + " that is " + commands[i].Substring(((z * 9) + 9), 3));
                                         int celly = Int32.Parse(commands[i].Substring(((z * 9) + 9), 3));
-                                        Globals.cellListGlobal[cellx, celly] = new Cell(false, Color.FromArgb(0, 0, 0, 0), ColorFloor, ColorRoof);
+                                        Globals.cellListGlobal[cellx, celly] = new Cell(false, Color.FromArgb(0, 0, 0, 0), Globals.floorColor, Globals.roofColor);
                                         if (cellType == 1)
                                         {
-                                            Globals.cellListGlobal[cellx, celly].setMat(true, Color.Black);
+                                            Globals.cellListGlobal[cellx, celly].setMat(true, Globals.drawColor);
                                         }
                                     }
                                 }
@@ -576,9 +607,29 @@ namespace DoomCloneV2
                                 int damageDone = Int32.Parse(commands[i].Substring(8, 4));
                                 this.units[enemyIndex].DealDamage(damageDone);
                                 break;
+
+                            //
+                            //SET COLOUR OF WALLS IF CLIENT
+                            //
+                            case "SEC":
+
+                                if (!Globals.SinglePlayer && !server)
+                                {
+                                    Color[] colors = new Color[3];
+                                    for(int colorPicker=0; colorPicker < 3; colorPicker++)
+                                    {
+                                        colors[colorPicker] = Color.FromArgb(255,Int32.Parse(commands[i].Substring((colorPicker * 9)+3,3)), Int32.Parse(commands[i].Substring((colorPicker * 9) + 6, 3)), Int32.Parse(commands[i].Substring((colorPicker * 9) + 9, 3)));
+                                    }
+                                    Globals.drawColor = colors[0];
+                                    Globals.floorColor = colors[1];
+                                    Globals.roofColor = colors[2];
+                                }
+                                break;
                             //
                             //SET UP CLIENT WORLD DETAILS
-                            //
+                                    ///SEP - Set Player-SEP[00 PlayerID][000 Player X Position][000 Player Y Position][char(1) Player direction][00 PlayerCharacterFIle] - Creates Player of set ID at set co-ords
+
+                                    //
                             case "SEP":
 
                                 if (!Globals.SinglePlayer && !server)
@@ -586,12 +637,13 @@ namespace DoomCloneV2
                                     int playerID1 = Int32.Parse(commands[i].Substring(3,2));
                                     int playerx1 = Int32.Parse(commands[i].Substring(5, 3));
                                     int playery1 = Int32.Parse(commands[i].Substring(8, 3));
+                                    String playerName = "Player"+ String.Format("{0:00}",commands[i].Substring(12,2));
                                     char d = Char.Parse(commands[i].Substring(11,1));
                                     Globals.Message = "Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count;
                                     Debug.WriteLine("Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count);
                                     if (this.players.Count == playerID1)
                                     {
-                                        this.players.Add(new Player(playerx1, playery1, 1,playerID1));
+                                        this.players.Add(new Player(playerx1, playery1, 1,playerID1,playerName));
                                         Directions dir=Directions.NULL;
                                         switch (d)
                                         {
@@ -612,7 +664,7 @@ namespace DoomCloneV2
                                         if (this.playerID!=-1 && this.playerID != playerID1)
                                         {
                                             Globals.flags[5] = true;
-                                            playerUnits.Add(Globals.cellListGlobal[playerx1, playery1].createUnit(playerx1, playery1,new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
+                                            playerUnits.Add(Globals.cellListGlobal[playerx1, playery1].createUnit(playerx1, playery1,new Bitmap("Resources/Images/Friendly/"+playerName+"/"+playerName+"_Idle.png"), new Bitmap("Resources/Images/Friendly/"+playerName+"/"+playerName+"_Death.png")));
                                             Globals.cellListGlobal[playerx1, playery1].SetPlayer(players[playerID1].GetPlayerID());
                                             Debug.WriteLine(this.thisClient.GetName() + ": Created new player @ " + playerx1 + "," + playery1);
                                         }

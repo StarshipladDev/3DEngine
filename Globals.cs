@@ -38,10 +38,14 @@ namespace DoomCloneV2
         public static string port = "8004";
         public static string Address = "localhost";
         public static string clientName = "This Client";
+        public static string playerFileName = "Player01";
         public const int MAXFRAMES = 8;
         public const int INTERVALTIMEMILISECONDS = 1000 / 5;
         public const int MaxPossibleDepth = 20;
         public static int ticks = 0;
+        public static  Color floorColor;
+        public static Color drawColor;
+        public static Color roofColor;
 
         /// <summary>
         /// Stolen from https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp 04/03/2020

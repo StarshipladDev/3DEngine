@@ -44,7 +44,7 @@ namespace DoomCloneV2
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(650,650);
+            this.ClientSize = new System.Drawing.Size(1080,720);
             this.KeyUp += OnKeyUp;
             this.MouseMove += MouseMover;
             this.MouseClick += MouseClicker;

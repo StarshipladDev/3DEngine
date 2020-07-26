@@ -35,7 +35,6 @@ C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\config.xml
 C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\DoomClone.ico
 C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Enemy\Devil\Devil_Death.png
 C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Enemy\Devil\Devil_Idle.png
-C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player1\Player1_Idle.png
 C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Utility\Crosshair.png
 C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Sound\Bang_001_001.wav
 C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Sound\Bang_001_002.wav
@@ -52,3 +51,18 @@ C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\DoomCloneV2.exe
 C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\DoomCloneV2.pdb
 C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Projectiles\Fireball\Flame.png
 C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\MapMaker.ico
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player01\Player01_Death.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player01\Player01_Idle.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player01\Player01_IdleOld.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player02\Player02_Death.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player03\Player03_Death.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player03\Player03_Fire.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player03\Player03_Idle.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player04\Player04_Death.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player04\Player04_Idle.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player05\Player05_Death.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player05\Player05_Fire.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player05\Player05_Idle.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player02\Player02_Idle.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player06\Player06_Death.png
+C:\Users\Ozzy\Documents\Code\C#\DoomCloneV2\bin\Debug\Resources\Images\Friendly\Player06\Player06_Idle.png

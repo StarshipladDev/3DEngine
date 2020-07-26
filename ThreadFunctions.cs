@@ -70,7 +70,7 @@ namespace DoomCloneV2
         {
             Client client = (Client)c1;
             client.Write("PRT Client '"+client.GetName()+"' Connected!");
-            client.Write("COC"+client.GetID());
+            client.Write("COC"+client.GetID()+client.GetPlayerImage());
             while (true)
             {
                 client.Read();

@@ -218,14 +218,14 @@ namespace DoomCloneV2
         {
             Globals.cellListGlobal = new Cell[20, 20];
 
-            Color floorColor = Color.FromArgb(255, rand.Next(254), rand.Next(254), rand.Next(254));
-            Color drawColor = Color.FromArgb(255, rand.Next(254), rand.Next(254), rand.Next(254));
-            Color roofColor = Color.FromArgb(255, rand.Next(254), rand.Next(254), rand.Next(254));
+            Globals.floorColor = Color.FromArgb(255, rand.Next(254), rand.Next(254), rand.Next(254));
+            Globals.drawColor = Color.FromArgb(255, rand.Next(254), rand.Next(254), rand.Next(254));
+            Globals.roofColor = Color.FromArgb(255, rand.Next(254), rand.Next(254), rand.Next(254));
             for (int i = 0; i < Globals.cellListGlobal.GetLength(0); i++)
             {
                 for (int f = 0; f < Globals.cellListGlobal.GetLength(1); f++)
                 {
-                    Globals.cellListGlobal[i, f] = new Cell(true,drawColor,floorColor,roofColor);
+                    Globals.cellListGlobal[i, f] = new Cell(true,Globals.drawColor, Globals.floorColor, Globals.roofColor);
                 }
             }
         }
