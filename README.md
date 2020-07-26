@@ -63,13 +63,13 @@ Below is the process used to draw a '3d' world.
 
 ## Latest Update
 
-07/07/2020 MapMaker Complete
+26/07/2020 Skin Customization and Multiplayer-enabled random Maps
 
 ![MapMakerImage](MapMaker.PNG)
 
 ## Next Build
 
-Week ending 26/07/2020 - Gameplay Build
+29/07/2020 - Gameplay Build
 
 * Map generation
 
