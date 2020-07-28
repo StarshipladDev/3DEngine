@@ -126,6 +126,14 @@ namespace DoomCloneV2
                     currentPoint = DrawTunnel(currentPoint, initalNodes[i + 1], "vertical");
                 }
             }
+            //Fill in border
+            for(int i=0; i < Globals.cellListGlobal.GetLength(0); i++)
+            {
+                Globals.cellListGlobal[0,i]=new Cell(true, Globals.drawColor, Globals.floorColor, Globals.roofColor); 
+                Globals.cellListGlobal[Globals.cellListGlobal.GetLength(0)-1, i] = new Cell(true, Globals.drawColor, Globals.floorColor, Globals.roofColor);
+                Globals.cellListGlobal[i,0] = new Cell(true, Globals.drawColor, Globals.floorColor, Globals.roofColor);
+                Globals.cellListGlobal[i,Globals.cellListGlobal.GetLength(0) - 1] = new Cell(true, Globals.drawColor, Globals.floorColor, Globals.roofColor);
+            }
             draw = true;
             Refresh();
         }
@@ -195,14 +203,14 @@ namespace DoomCloneV2
                     for (int f = 0; f < Globals.cellListGlobal.GetLength(1); f++)
                     {
                         
-                        Color c = Globals.cellListGlobal[i,f].GetCellColor();
+                        Color c = Globals.drawColor;
                         if (Globals.cellListGlobal[i, f].GetMat()==false)
                         {
-                            c = Color.Red;
+                            c = Globals.floorColor;
                         }
                         if (cellListSeePlayer[i,f] == true)
                         {
-                            c = Color.Purple;
+                            c = Globals.roofColor;
                         }
                         int x = (i * 10) + 50;
                         int y = (f * 10) + 50;

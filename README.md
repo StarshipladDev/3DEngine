@@ -1,34 +1,30 @@
-# 3D FPS
+# DoomScrolls -> Retro 3D FPS (Turn-Based)
 
 ![DoomClone](SalesPitchImage.PNG)
 
-This is a simple PlaceHolder README while I File dump my current progress.
-I've been working on this project for about 10 days, and am now trying to better document my
-progress and follow better SDLC practice.
-
 ## Notes/Know Bugs:
 
-> On loading in as client, gun will be oversized. Press 'Q' to generate a new correct-sized gun.
+> On loading in as client, gun will be oversized. Press 'Q' to generate a new correct-sized gun. FIXED AS OF 28/07/2020
 
 > The serverClients do not currently exit, so the program must be closed from task manager if doing multiplayer
 
 > A significant amount of input may result in some commands not being run
 
-> Main Program will not start until 'MapMaker' is closed.
-
 > Walking into projectiles does not cause the projectiles to damage the player
 
+>No Turn Limit At The Moment
 
 ## Features(Planned In Brackets)
 
 (Turn Based FPS Combat)
 2+ Player Multiplayer (If you know what IP Address to connect to)
 Animated Enemies
+Turn-Based FPS combat (with acttual challenge )
 (Animated Player Weapons)
 Randomly Generated Weapons
-(Random Map Generation)
+Random Map Generation
 (Intractable log files and story)
-Multiple resolutions
+(Multiple resolutions)
 Multiple Editable Player Skins
 (Save states)
 
@@ -63,23 +59,36 @@ Below is the process used to draw a '3d' world.
 
 ## Latest Update
 
-26/07/2020 Skin Customization and Multiplayer-enabled random Maps
+28/07/2020 Skin Customization and Multiplayer-enabled random Maps. Turn System.
 
 ![MapMakerImage](MapMaker.PNG)
+![MultiplayerImage](Multiplayer.PNG)
 
 ## Next Build
 
 29/07/2020 - Gameplay Build
+* Skin Customization via config file
+* Synced Turn-based gameplay
+* Random Map Generation
 
-* Map generation
+## Following Build
+
+End Of September -Content Build
+
+* Enemy Variety and attack patterns
 
 * Rehaul of weapon System
 
-* More enemies & Combat interactions
+* Main Menu
 
 * Full documentation & display controls
 
-* Add optional supporter skins.
+* Animated Weapons
+
+* Turn limitations (Only x moves per turn, turn ends on shoot ect.)
+
+* Story logs held in computors
+
 
 ## Skill developing
 
@@ -109,6 +118,8 @@ The *bin/Debug/config.xml* file contains the option to select your server addres
 The IP Address of the server can be found by opening up a command prompt on the server's computor, and typing 'ipconfig'
 
 The Program currently has the following commands:
+
+*Space* - End your turn. You will be frozen until all connected palyers have ended their turn.
 
 *W* Move your player Forward
 

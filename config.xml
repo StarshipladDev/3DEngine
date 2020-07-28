@@ -2,5 +2,5 @@
     <Port>8006</Port>
     <ServerAddress>localhost</ServerAddress>
     <ClientName>Starshiplad</ClientName>
-    <PlayerFileName>2</PlayerFileName>
+    <PlayerFileName>5</PlayerFileName>
 </Config>

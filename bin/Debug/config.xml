@@ -1,6 +1,6 @@
 <Config>
     <Port>8006</Port>
     <ServerAddress>localhost</ServerAddress>
-    <ClientName>Starshiplass</ClientName>
-    <PlayerFileName>6</PlayerFileName>
+    <ClientName>Starshiplad</ClientName>
+    <PlayerFileName>2</PlayerFileName>
 </Config>
