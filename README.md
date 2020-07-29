@@ -67,13 +67,6 @@ Below is the process used to draw a '3d' world.
 
 ## Next Build
 
-29/07/2020 - Gameplay Build
-* Skin Customization via config file
-* Synced Turn-based gameplay
-* Random Map Generation
-
-## Following Build
-
 End Of September -Content Build
 
 * Enemy Variety and attack patterns
