@@ -1,6 +1,6 @@
 # DoomScrolls -> Retro 3D FPS (Turn-Based)
 
-![DoomClone](Title.PNG)
+![DoomClone](Title.Png)
 ![DoomClone](SalesPitchImage.PNG)
 
 ## Notes/Know Bugs:
