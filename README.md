@@ -1,5 +1,6 @@
 # DoomScrolls -> Retro 3D FPS (Turn-Based)
 
+![DoomClone](Title.png)
 ![DoomClone](SalesPitchImage.PNG)
 
 ## Notes/Know Bugs:
@@ -55,11 +56,11 @@ Below is the process used to draw a '3d' world.
 
 ## Latest Build
 
-05/06/2020 - 0.02a- Friendship Build
+29/07/2020 - 0.03a- Map Generation
 
 ## Latest Update
 
-28/07/2020 Skin Customization and Multiplayer-enabled random Maps. Turn System.
+29/07/2020 Release of Map Maker Build
 
 ![MapMakerImage](MapMaker.PNG)
 ![MultiplayerImage](Multiplayer.PNG)
