@@ -16,21 +16,10 @@ namespace DoomCloneV2
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        public static void ThreadRunner(object c1)
-        {
-            System.Diagnostics.Debug.WriteLine("Starting Thread");
-            FileStream f = File.Create("output.txt");
-            Client c = (Client)c1;
-            c.Write("Hello From^");
-            Byte[] ff = System.Text.Encoding.ASCII.GetBytes(c.Read());
-            f.Write(ff,0,ff.Length);
-            f.Close();
-            c.CloseClient();
-        }
         public static void ThreadRunnerServer()
         {
 
-            Server s1 = new Server("192.168.200.40", "50001");
+            Server s1 = new Server("192.168.200.40", "8006");
             Thread.Sleep(1000);
             
         }

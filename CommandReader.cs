@@ -52,7 +52,8 @@ namespace DoomCloneV2
                 {
                     Debug.WriteLine("Removing player on " + oldx + "," + oldy + ", setting new player on" + players[x].GetX() + "," + players[x].Gety());
                     cellList[oldx, oldy].RemoveUnit();
-                    playerUnits[x] = (cellList[players[x].GetX(), players[x].Gety()].createUnit(players[x].GetX(), players[x].Gety(), new Bitmap("Resources/Images/Friendly/Player1/Player1_Idle.png"), new Bitmap("Resources/Images/Friendly/Player1/Player1_Death.png")));
+                    Debug.WriteLine("Moving palyer's file name is "+ "Resources/Images/Friendly/" + players[x].palyerFileName + "/" + players[x].palyerFileName + "_Idle.png");
+                    playerUnits[x] = (cellList[players[x].GetX(), players[x].Gety()].createUnit(players[x].GetX(), players[x].Gety(), new Bitmap("Resources/Images/Friendly/"+ players[x].palyerFileName+"/"+ players[x].palyerFileName+"_Idle.png"), new Bitmap("Resources/Images/Friendly/"+ players[x].palyerFileName +"/"+players[x].palyerFileName+"_Death.png")));
                     if (cellList[oldx, oldy].GetisUnitPresent())
                     {
                         Debug.WriteLine("There IS a unit on the old coords " + oldx + "," + oldy);

@@ -17,15 +17,17 @@ namespace DoomCloneV2
         private Gun playerGun;
         public Directions dir = Directions.UP;
         public Bitmap playerView;
+        public String palyerFileName;
         public int health = 20;
         bool dead = false;
 
-        public Player(int x, int y, int gunType,int iD)
+        public Player(int x, int y, int gunType,int iD,String playerFileName="Player01")
         {
             CreateGun();
             this.yPos = y;
             this.xPos = x;
             this.playerID = iD;
+            this.palyerFileName = playerFileName;
 
         }
         public void doDamage(int damage)

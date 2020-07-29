@@ -180,6 +180,11 @@ namespace DoomCloneV2
             { }
 
         }
+        public String GetPlayerImage()
+        {
+            Debug.WriteLine("Input into format is "+Globals.playerFileName);
+            return String.Format("{0:00}",Int32.Parse(Globals.playerFileName));
+        }
         public void CloseClient()
         {
             Print("Ending Connection");
