@@ -7,17 +7,14 @@
 
 > On loading in as client, gun will be oversized. Press 'Q' to generate a new correct-sized gun. FIXED AS OF 28/07/2020
 
-> The serverClients do not currently exit, so the program must be closed from task manager if doing multiplayer
+> *Important* The serverClients do not currently exit, so the program must be closed from task manager if doing multiplayer, otherwise there is a memory leak *Important*
 
 > A significant amount of input may result in some commands not being run
-
-> Walking into projectiles does not cause the projectiles to damage the player
 
 >No Turn Limit At The Moment
 
 ## Features(Planned In Brackets)
 
-(Turn Based FPS Combat)
 2+ Player Multiplayer (If you know what IP Address to connect to)
 Animated Enemies
 Turn-Based FPS combat (with acttual challenge )
@@ -25,7 +22,7 @@ Turn-Based FPS combat (with acttual challenge )
 Randomly Generated Weapons
 Random Map Generation
 (Intractable log files and story)
-(Multiple resolutions)
+(Multiple playable resolutions)
 Multiple Editable Player Skins
 (Save states)
 
@@ -56,18 +53,27 @@ Below is the process used to draw a '3d' world.
 
 ## Latest Build
 
-29/07/2020 - 0.03a- Map Generation
-
-## Latest Update
-
-29/07/2020 Release of Map Maker Build
+*29/07/2020 - 0.03a- Map Generation*
 
 ![MapMakerImage](MapMaker.PNG)
+
+## Latest Updates
+
+*09/12/2020 - Menu build*
+
+![PromoImage](PromoImage.PNG)
+
+*29/07/2020 - Map maker*
+
+![MapMakerImage](MapMaker.PNG)
+
+*15/05/2020 - Multiplayer*
+
 ![MultiplayerImage](Multiplayer.PNG)
 
 ## Next Build
 
-End Of September -Content Build
+End Of December -Content Build  **Delayed from September*
 
 * Enemy Variety and attack patterns
 
@@ -75,7 +81,7 @@ End Of September -Content Build
 
 * Main Menu
 
-* Full documentation & display controls
+* Full documentation
 
 * Animated Weapons
 
