@@ -67,6 +67,10 @@ namespace DoomCloneV2
             }
 
         }
+        public void KillServer()
+        {
+            Write("KillTheServer");
+        }
         public String GetCommands()
         {
 

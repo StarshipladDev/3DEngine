@@ -59,18 +59,20 @@
     </Compile>
     <Compile Include="Player.cs" />
     <Compile Include="Projectile.cs" />
+    <Compile Include="Screens\DoomMenuItem.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="ThreadFunctions.cs" />
+    <Compile Include="Screens\TitleScreen.cs" />
     <Compile Include="Unit.cs" />
-    <Compile Include="Form1.cs">
+    <Compile Include="Screens\Form1.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form1.Designer.cs">
+    <Compile Include="Screens\Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="Form1.resx">
+    <EmbeddedResource Include="Screens\Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -91,7 +93,6 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <None Include="Resources\Images\Gun Parts\Defaults\Rifle - Copy.pdn" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -102,138 +103,16 @@
     <Content Include="config.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Images\DoomClone.ico">
+    <Content Include="Resources\Images\Menu\Play.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Images\Enemy\Devil\Devil_Death.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Enemy\Devil\Devil_Idle.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player01\Player01_Death.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player01\Player01_Idle.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player01\Player01_IdleOld.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player02\Player02_Death.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player02\Player02_Idle.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player03\Player03_Death.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player03\Player03_Fire.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player03\Player03_Idle.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player04\Player04_Death.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player04\Player04_Idle.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player05\Player05_Death.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player05\Player05_Fire.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player05\Player05_Idle.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player06\Player06_Death.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Friendly\Player06\Player06_Idle.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Gun Parts\Arm\Arm_001_000_Camo.png" />
-    <Content Include="Resources\Images\Gun Parts\Arm\Arm_002_000_Navy.png" />
-    <Content Include="Resources\Images\Gun Parts\Barrel\Barrel_000_001_Simple.png" />
-    <Content Include="Resources\Images\Gun Parts\Barrel\Barrel_000_002_Boring.png" />
-    <Content Include="Resources\Images\Gun Parts\Defaults\Camo_Arm.png" />
-    <Content Include="Resources\Images\Gun Parts\Defaults\First_Gun_Idle.png" />
-    <Content Include="Resources\Images\Gun Parts\Defaults\First_Gun_Shoot.png" />
-    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Arm.png" />
-    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Barrel.png" />
-    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Body.png" />
-    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Ejection.png" />
-    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Flare.png" />
-    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Grip.png" />
-    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Hand.png" />
-    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Magazine.png" />
-    <Content Include="Resources\Images\Gun Parts\Defaults\Simple_Sight.png" />
-    <Content Include="Resources\Images\Gun Parts\Defaults\Zebra_Body.png" />
-    <Content Include="Resources\Images\Gun Parts\Ejection\Ejection_001_000_Skull.png" />
-    <Content Include="Resources\Images\Gun Parts\Ejection\Ejection_001_001_Heavy_Empty.png" />
-    <Content Include="Resources\Images\Gun Parts\Front_Body\Front_Body_000_001_Boring.png" />
-    <Content Include="Resources\Images\Gun Parts\Front_Body\Front_Body_002_001_TigerStrike.png" />
-    <Content Include="Resources\Images\Gun Parts\Front_Body\Front_Body_003_001_Pinky.png" />
-    <Content Include="Resources\Images\Gun Parts\Grip\Grip_000_000_Boring.png" />
-    <Content Include="Resources\Images\Gun Parts\Grip\Grip_000_001_Bipod.png" />
-    <Content Include="Resources\Images\Gun Parts\Grip\Grip_000_002_No_Grip.png" />
-    <Content Include="Resources\Images\Gun Parts\Grip\Grip_000_003_WetWork.png" />
-    <Content Include="Resources\Images\Gun Parts\Hands\Hand_000_WhiteHand.png" />
-    <Content Include="Resources\Images\Gun Parts\Magazine\Magazine_001_000_BoxMag.png" />
-    <Content Include="Resources\Images\Gun Parts\Magazine\Magazine_001_000_LMagGreen.png" />
-    <Content Include="Resources\Images\Gun Parts\Magazine\Magazine_001_001_DrumMagazine.png" />
-    <Content Include="Resources\Images\Gun Parts\Muzzle_Flare\Flare_001_000_Rifle_1.png" />
-    <Content Include="Resources\Images\Gun Parts\Rails\Rail_001_000_SpeirsGrey_Arrows.png" />
-    <Content Include="Resources\Images\Gun Parts\Rails\Rail_001_000_SpeirsGrey_Dots.png" />
-    <Content Include="Resources\Images\Gun Parts\Rails\Rail_001_000_SpeirsGrey_Lines.png" />
-    <Content Include="Resources\Images\Gun Parts\Receiver\Receiver_002_001_TigerStrike.png" />
-    <Content Include="Resources\Images\Gun Parts\Receiver\Receiver_003_001_Pinky.png" />
-    <Content Include="Resources\Images\Gun Parts\Sight\Sight_000_000_Boring.png" />
-    <Content Include="Resources\Images\Gun Parts\Sight\Sight_000_001_Matrix.png" />
-    <Content Include="Resources\Images\Gun Parts\Sight\Sight_000_001_RedDot.png" />
-    <Content Include="Resources\Images\MapMaker.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Projectiles\Fireball\Flame.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Utility\Crosshair.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Sound\Bang_001_001.wav">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Sound\Bang_001_002.wav">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Sound\Boof.wav">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Sound\Boof2.wav">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\DevilSuit.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\DevilSuit_Dead.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Gun_Idle.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Gun_Shoot.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Girl.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\UMP45.png">
+    <Content Include="Resources\**\*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

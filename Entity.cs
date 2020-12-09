@@ -54,11 +54,13 @@ namespace DoomCloneV2
                         {
                             System.Media.SoundPlayer player = new System.Media.SoundPlayer("Resources/Sound/Boof.wav");
                             player.Play();
+                            player.Dispose();
                         }
                         else
                         {
                             System.Media.SoundPlayer player = new System.Media.SoundPlayer("Resources/Sound/Boof2.wav");
                             player.Play();
+                            player.Dispose();
                         }
                     }
                 }
