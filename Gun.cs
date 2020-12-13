@@ -76,8 +76,9 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
             setComponent("Sight");
             setComponent("Front_Body");
             setComponent("Receiver");
-
+            /*
             setComponent("Token");
+            */
             setComponent("Arm");
             setComponent("Magazine");
             picture = new Bitmap(arm.Width, arm.Height, PixelFormat.Format32bppPArgb);
@@ -91,7 +92,7 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
             g.DrawImage(this.receiver, new Point(0, 0));
 
             g.DrawImage(this.ejection, new Point(0, 0));
-            g.DrawImage(this.token, new Point(0, 0));
+            //g.DrawImage(this.token, new Point(0, 0));
             g.DrawImage(this.arm, new Point(0, 0));
             g.DrawImage(this.magazine, new Point(0, 0));
             g.Dispose();
@@ -107,7 +108,7 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
             g.DrawImage(this.receiver, new Point(0, 0));
 
             g.DrawImage(this.ejection, new Point(0, 0));
-            g.DrawImage(this.token, new Point(0, 0));
+            //g.DrawImage(this.token, new Point(0, 0));
             g.DrawImage(this.arm, new Point(0, 0));
             g.DrawImage(this.magazine, new Point(0, 0));
             g.RotateTransform(20);
@@ -143,8 +144,8 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
             for (int i = 0; i < possibleImgs.Count(); i++)
             {
                 String fileName = possibleImgs[i].Substring(imgPath.Length, possibleImgs[i].Length - imgPath.Length);
-                int firstVarStart = gunPart.Length + 1;
-                int secondVarStart = gunPart.Length + 5;
+                int firstVarStart = gunPart.Length + 1; // 1 '_' character before the first code
+                int secondVarStart = gunPart.Length + 5;//2 '_' characters plus 3 numbers
                 switch (gunPart)
                 {
                     case "Barrel":
@@ -246,6 +247,7 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
                             }
                         }
                         break;
+                    /*
                     case "Token":
                         if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.grip_Type))
                         {
@@ -255,6 +257,7 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
                             }
                         }
                         break;
+                    */
                     default:
                         break;
                 }

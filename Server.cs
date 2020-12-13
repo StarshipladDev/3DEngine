@@ -51,13 +51,18 @@ namespace DoomCloneV2
             }
             catch(Exception e)
             {
+                Stop();
                 System.Diagnostics.Debug.WriteLine("error: "+e.Message);
             }
            
         }
         public static void SendMessage(String s,Server serv)
         {
-
+            if (s.Equals("KillTheSever^"))
+            {
+                serv.Stop();
+                return;
+            }
             Debug.WriteLine("Sending a Message via Server");
             //Globals.flags[5] = true;
             //Globals.Message = s;
@@ -79,8 +84,9 @@ namespace DoomCloneV2
             int i = 0;
             while (i < counter)
             {
-                listeners[i].Stop();
                 clients[i].Close();
+                listeners[i].Stop();
+                thread[i].Abort();
                 i++;
             }
         }
