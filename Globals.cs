@@ -6,7 +6,6 @@ using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 namespace DoomCloneV2
 {
 
@@ -30,7 +29,7 @@ namespace DoomCloneV2
         public const int cellSize = 20;
         //Draw directin /Drew gun //Turn gun back //draw client confirm //draw server confirm //Draw message //Draw Server receive
         public static bool[] flags = new bool[7];
-        //Base animaions
+        //Base animations
         public static int[] animations = new int[5];
         public static bool readyToDraw = true;
         public static string Message = String.Empty;
@@ -46,6 +45,9 @@ namespace DoomCloneV2
         public static  Color floorColor;
         public static Color drawColor;
         public static Color roofColor;
+        public static System.Media.SoundPlayer music = new System.Media.SoundPlayer();
+        public static bool playingMusic = false;
+
 
         /// <summary>
         /// Stolen from https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp 04/03/2020
@@ -76,7 +78,6 @@ namespace DoomCloneV2
                     graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
                 }
             }
-
             return destImage;
         }
 
@@ -93,6 +94,23 @@ namespace DoomCloneV2
             {
                 g.DrawImage(source, 0, 0, section, GraphicsUnit.Pixel);
                 return bitmap;
+            }
+        }
+
+        public static void StartMusic()
+        {
+            if (! playingMusic)
+            {
+                music.Play();
+                playingMusic = true;
+            }
+        }
+        public static void StopMusic()
+        {
+            if (playingMusic)
+            {
+                music.Stop();
+                playingMusic = false;
             }
         }
     }
