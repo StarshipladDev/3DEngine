@@ -19,7 +19,6 @@ namespace DoomCloneV2.Screens
         public Image drawImage;
         public delegate void actionfunction();
         actionfunction ac;
-        public System.Media.SoundPlayer sound;
 
         /// <summary>
         /// MenuItem is the constructor for DoomScroll's 'MenuItem' class.
@@ -37,7 +36,6 @@ namespace DoomCloneV2.Screens
             this.height = image.Height;
             this.drawImage = image;
             this.ac = ac;
-            sound = new System.Media.SoundPlayer("Resources/Sound/SpaceWhales.wav");
         }
         public void  Draw(Graphics g)
         {
