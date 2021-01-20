@@ -157,7 +157,7 @@ Commented some files
 
 *20/01/2021 - Animated HUD Alpha* - **Currently in 'Gameplay' branch**
 
-![PromoImage](HUDImage.PNG)
+![PromoImage](HUDImage.png)
 
 *13/01/2021 - Animated Weapon Alpha* - **Currently in 'Gameplay' branch**
 
