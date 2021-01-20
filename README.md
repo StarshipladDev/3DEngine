@@ -11,13 +11,12 @@
 
 >No Turn Limit At The Moment
 
->
 
 ## Features(Planned In Brackets)
 
 2+ Player Multiplayer (If you know what IP Address to connect to)
 Animated Enemies
-Turn-Based FPS combat (with acttual challenge )
+Turn-Based FPS combat (with actual challenge )
 Animated Player Weapons
 Randomly Generated Weapons
 Random Map Generation
@@ -58,98 +57,109 @@ Below is the process used to draw a '3d' world.
 ![MapMakerImage](MapMaker.PNG)
 
 ## Latest Update Notes:
+Animated Weapon Alpha
+
+Sum up :
+Added 'Gun's drawImage handling to be an array of individual frames rather than one image so it can be aniamted.
+Performed some server handling for better connections
+Added a Menu system
+Commented some files
 
 ```
 
 27/10/2020{
 
-	Server.cs.SendMessage -> Add a condition that if the message equals "KillTheServer", the server will run server.Stop() to stop memory leak
-	
-	Server.cs.Stop() -> Add condition to close 'thread' array to stop memory leak
-	
-	DoomCloneV2 -> Add TitleScreen.cs to handle Menu Drawing
-	
-	DoomCloneV2 -> Add 'Always include' wildcard for all content in 'Resources' folder for further development & modding
-	
-	DoomCloneV2/Resources -> Rename some dirs so Player.SetComponent can read resources correctly so program works
-	
-	Player.SetComponent && Gun.buildGun -> Comment out 'Token' component as no longer available
-	
-	Form1.cs.Form1_FormClosing -> Add this function to 'tidy up' memory leaks caused by unclosed threads when using 'close window'
-	
+    Server.cs.SendMessage -> Add a condition that if the message equals "KillTheServer", the server will run server.Stop() to stop memory leak
+    
+    Server.cs.Stop() -> Add condition to close 'thread' array to stop memory leak
+    
+    DoomCloneV2 -> Add TitleScreen.cs to handle Menu Drawing
+    
+    DoomCloneV2 -> Add 'Always include' wildcard for all content in 'Resources' folder for further development & modding
+    
+    DoomCloneV2/Resources -> Rename some dirs so Player.SetComponent can read resources correctly so program works
+    
+    Player.SetComponent && Gun.buildGun -> Comment out 'Token' component as no longer available
+    
+    Form1.cs.Form1_FormClosing -> Add this function to 'tidy up' memory leaks caused by unclosed threads when using 'close window'
+    
 }
 08/12/2020{
 
-	Form1.cs -> Add bool 'Menu'. In draw function, while 'menu' true, play main theme and draw the menu .
-	This is to add a menu feature to the game
-	
-	Form1.cs.DrawMenu() -> Added a 'DrawMenu' function to handle drawing the menu
-	
-	DoomCloneV2 -> Add class 'Menu Item' with draw state and delegated 'onclick' function
-	
-	DoomCloneV2 -> Seperate Major classes into folders such as 'Screens' and 'Threads'
-	
-	Form1.cs -> Add a MenuItem 'Play'. On click it will 
-	
-	Form1.cs.MouseClicker() -> Add handler so that if menu true, any menuItem under cursor will have its 'onclick' function called
-	
-	MenuItem -> Rename 'DoomMenuItem' to avoid name conflict with Windows.Forms.MenuItem
+    Form1.cs -> Add bool 'Menu'. In draw function, while 'menu' true, play main theme and draw the menu .
+    This is to add a menu feature to the game
+    
+    Form1.cs.DrawMenu() -> Added a 'DrawMenu' function to handle drawing the menu
+    
+    DoomCloneV2 -> Add class 'Menu Item' with draw state and delegated 'onclick' function
+    
+    DoomCloneV2 -> Separate Major classes into folders such as 'Screens' and 'Threads'
+    
+    Form1.cs -> Add a MenuItem 'Play'. On click it will
+    
+    Form1.cs.MouseClicker() -> Add handler so that if menu true, any menuItem under cursor will have its 'onclick' function called
+    
+    MenuItem -> Rename 'DoomMenuItem' to avoid name conflict with Windows.Forms.MenuItem
 
 }
 09/12/2020{
 
-	Form1.cs -> Add 2 more DoomMenuItems - 'About' and 'Back' .
-	About sets 'abouton' bool to true, making the 'DrawMenu' function draw the 'About.PNG' image and the 'Back' Menu button.
-	'Back' DoomMenuItem sets 'abouton' to false, returning the player to the main menu.
-	This is to add more functionality to the menu.
-	
-	Form1.cs.BeginSession() -> Add Documentation comments for clearer code-readability.
-	
-	Form1.cs -> Add methods 'SwitchFunc' to toggle function button for the above DoomMenuItems to have functionality.
+    Form1.cs -> Add 2 more DoomMenuItems - 'About' and 'Back' .
+    About sets 'abouton' bool to true, making the 'DrawMenu' function draw the 'About.PNG' image and the 'Back' Menu button.
+    'Back' DoomMenuItem sets 'abouton' to false, returning the player to the main menu.
+    This is to add more functionality to the menu.
+    
+    Form1.cs.BeginSession() -> Add Documentation comments for clearer code-readability.
+    
+    Form1.cs -> Add methods 'SwitchFunc' to toggle function button for the above DoomMenuItems to have functionality.
 }
 12/01/2021{
 
-	Errors encounered:
-	Clipping the animation Frame picture produced and 'Out of Memory' error. The requested sub-sections of the Frame picture
-	were adjusted to all be within bounds.
+    Errors encountered:
+    Clipping the animation Frame picture produced and 'Out of Memory' error. The requested sub-sections of the Frame picture
+    were adjusted to all be within bounds.
 
-	Gun.cs -> Add 'BuildGunAnimation' Method that retuns and array of Bitmaps, so gun drawing can be animated
-	
-	Gun.cs -> Add 'animation' Bitmap Array so returned gun iamge can be Bitmap array to animate.
-	
-	Player.cs -> Modify 'playerView' to be BitmapArray, so gun can be animated
-	
-	Player.cs -> Creategun() -> Temporarily removed Random Gun gneration, only producing test weapons with code 333 for testing
-	
-	Player.cs -> Add UpdateGunSize() to Update all 'animation' frames to correct size so they can be called as is
-	
-	Form1.cs -> StartSession() -> Call 'thispalyer.UpdateGunSize to update gun size at the start
-	
+    Gun.cs -> Add 'BuildGunAnimation' Method that returns and array of Bitmaps, so gun drawing can be animated
+    
+    Gun.cs -> Add 'animation' Bitmap Array so returned gun image can be Bitmap array to animate.
+    
+    Player.cs -> Modify 'playerView' to be BitmapArray, so gun can be animated
+    
+    Player.cs -> Creategun() -> Temporarily removed Random Gun gneration, only producing test weapons with code 333 for testing
+    
+    Player.cs -> Add UpdateGunSize() to Update all 'animation' frames to correct size so they can be called as is
+    
+    Form1.cs -> StartSession() -> Call 'thispalyer.UpdateGunSize to update gun size at the start
+    
 }
 13/01/2021{
 
-	Errors encountered:
-	Playing music would stop as soon as soon as 'BeginSession' ended due to garbage collection.
-	This was resolved by moving the changing of the initalization of music as a new SoundPlayer, to changing the source in BeginSession.
-	However, this new 'Combat' song playing has been commented out as Soundplayer does not support multiplesimiltanious files.
-	This would prevent Enemy and Gun sounds.
-	https://stackoverflow.com/questions/50074501/music-suddenly-stops-playing-in-c-sharp-windows-form-application
+    Errors encountered:
+    Playing music would stop as soon as soon as 'BeginSession' ended due to garbage collection.
+    This was resolved by moving the changing of the initialization of music as a new SoundPlayer, to changing the source in BeginSession.
+    However, this new 'Combat' song playing has been commented out as Soundplayer does not support multiple simultaneous files.
+    This would prevent Enemy and Gun sounds.
+    https://stackoverflow.com/questions/50074501/music-suddenly-stops-playing-in-c-sharp-windows-form-application
 
-	Form1.cs -> BeginSession() -> At begining of function, add Game-music begining to play for audio enhancment.
-	
-	Gun.cs -> Add Comments Above all functions
-	
-	Globals -> Add Methods 'StartMusic()' and 'StopMusic()' to manage global audio.
-	
-	Form1.cs -> Form1() -> Music repalced from a local 'SoundPlayer' to 'Globals.StartMusic()' so music can be globally kept
-	outside of garbage collection
-	
+    Form1.cs -> BeginSession() -> At beginning of function, add Game-music beginning to play for audio enhancement.
+    
+    Gun.cs -> Add Comments Above all functions
+    
+    Globals -> Add Methods 'StartMusic()' and 'StopMusic()' to manage global audio.
+    
+    Form1.cs -> Form1() -> Music replaced from a local 'SoundPlayer' to 'Globals.StartMusic()' so music can be globally kept
+    outside of garbage collection
+    
 }
 ```
 
 ## Latest Updates
 
-*13/01/2021 - MAimated Weapon Alpha*
+*20/01/2021 - Animated HUD Alpha* - **Currently in 'Gameplay' branch**
+
+![PromoImage](HUDImage.png)
+
+*13/01/2021 - Animated Weapon Alpha* - **Currently in 'Gameplay' branch**
 
 ![PromoImage](Demo.gif)
 
@@ -213,7 +223,7 @@ The IP Address of the server can be found by opening up a command prompt on the 
 
 The Program currently has the following commands:
 
-*Space* - End your turn. You will be frozen until all connected palyers have ended their turn.
+*Space* - End your turn. You will be frozen until all connected players have ended their turn.
 
 *W* Move your player Forward
 
@@ -243,6 +253,10 @@ The Program currently has the following commands:
 
 *4* Toggle displaying debug text
 
+*5* Toggle displaying playerHUD
+
 To Fire, click on an enemy who is alive. A cursor will appear,
 and the next 3-4 clicks will shoot at the centre of the cursor.
 You can right click to exit firing.
+
+
