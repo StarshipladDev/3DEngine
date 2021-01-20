@@ -17,7 +17,7 @@ namespace DoomCloneV2
         private Gun playerGun;
         public Directions dir = Directions.UP;
         public Bitmap playerView;
-        public String palyerFileName;
+        public String playerFileName;
         public int health = 20;
         bool dead = false;
 
@@ -27,7 +27,7 @@ namespace DoomCloneV2
             this.yPos = y;
             this.xPos = x;
             this.playerID = iD;
-            this.palyerFileName = playerFileName;
+            this.playerFileName = playerFileName;
 
         }
         public void doDamage(int damage)
@@ -53,6 +53,10 @@ namespace DoomCloneV2
         public int GetPlayerID()
         {
             return this.playerID;
+        }
+        public int GetHealth()
+        {
+            return this.health;
         }
         private void CreateGun()
         {
