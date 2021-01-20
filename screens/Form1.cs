@@ -52,6 +52,7 @@ namespace DoomCloneV2
         DoomMenuItem play;
         DoomMenuItem about;
         DoomMenuItem back;
+        Hud playerHud;
         /// <summary>
         /// This constructor creates a Form. Parameters should be specified in <see cref="Globals"/>
         /// </summary>
@@ -65,6 +66,7 @@ namespace DoomCloneV2
             play = new DoomMenuItem(300, 200, Image.FromFile("Resources/Images/Menu/Play.png"), ac1);
             about = new DoomMenuItem(300, 300, Image.FromFile("Resources/Images/Menu/About.png"), ac2);
             back = new DoomMenuItem(400, 400, Image.FromFile("Resources/Images/Menu/Back.png"), ac2);
+
             InitializeComponent();
         }
 
@@ -119,6 +121,8 @@ namespace DoomCloneV2
                 Point enemyPoint = getFreeCell(rand);
                 units.Add(Globals.cellListGlobal[enemyPoint.X, enemyPoint.Y].createUnit(enemyPoint.X, enemyPoint.Y, new Bitmap("Resources/Images/Enemy/Devil/Devil_Idle.png"), new Bitmap("Resources/Images/Enemy/Devil/Devil_Death.png")));
             }
+            //20/01/2021 - Add palyer Hud
+            playerHud = new Hud(thisPlayer);
             //Print Cell
             PrintMap();
             /*
@@ -495,9 +499,9 @@ namespace DoomCloneV2
                                     String fileName =commands[i].Substring(5, 2);
                                     int filenameInt = Int32.Parse(fileName);
                                     fileName = "Player" + String.Format("{0:00}", filenameInt);
-                                    Debug.WriteLine("Server PlayerName is "+thisPlayer.palyerFileName);
+                                    Debug.WriteLine("Server PlayerName is "+thisPlayer.playerFileName);
                                     Debug.WriteLine("New PlayerName is " + fileName);
-                                    Debug.WriteLine("Respective substrings are "+ thisPlayer.palyerFileName.Substring(thisPlayer.palyerFileName.Length - 2, 2) + ","+ fileName.Substring(fileName.Length - 2, 2));
+                                    Debug.WriteLine("Respective substrings are "+ thisPlayer.playerFileName.Substring(thisPlayer.playerFileName.Length - 2, 2) + ","+ fileName.Substring(fileName.Length - 2, 2));
                                     Point playerNewPoint = getFreeCell(new Random());
                                     players.Add(new Player(playerNewPoint.X,playerNewPoint.Y, 1,players.Count,fileName));
                                     playerUnits.Add(Globals.cellListGlobal[playerNewPoint.X, playerNewPoint.Y].createUnit(playerNewPoint.X, playerNewPoint.Y, new Bitmap("Resources/Images/Friendly/"+fileName+"/"+fileName+"_Idle.png"), new Bitmap("Resources/Images/Friendly/"+fileName+"/"+fileName+"_Death.png")));
@@ -572,7 +576,7 @@ namespace DoomCloneV2
                                                 break;
                                         }
                                         Debug.WriteLine(this.thisClient.GetName() + ": Created new player @ " + playerx + "," + playery + " via serverClient");
-                                        thisClient.Write("SEP" + String.Format("{0:00}", playerID) + String.Format("{0:000}", playerx) + String.Format("{0:000}", playery)+ directionOfPlayer+String.Format("{0:00}",players[f].palyerFileName.Substring(players[f].palyerFileName.Length-2,2)));
+                                        thisClient.Write("SEP" + String.Format("{0:00}", playerID) + String.Format("{0:000}", playerx) + String.Format("{0:000}", playery)+ directionOfPlayer+String.Format("{0:00}",players[f].playerFileName.Substring(players[f].playerFileName.Length-2,2)));
                                         
                                     }
                                     thisClient.Write("DAL");
@@ -975,6 +979,10 @@ namespace DoomCloneV2
                 if (cursorUp)
                 {
                     this.cursor.Draw(g);
+                }
+                if (Globals.drawHUD)
+                {
+                    playerHud.DrawHud(g, n.Width, n.Height);
                 }
         }
         else{
