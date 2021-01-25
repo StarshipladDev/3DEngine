@@ -25,14 +25,14 @@ namespace DoomCloneV2
         public static bool drawGun = true;
         public static bool drawLines = false;
         public static bool drawFill = true;
-        public static bool drawText = true;
+        public static bool drawText = false;
         public static bool drawn = true;
         public static bool Pause = false;
         public static bool pauseForInfo = false;
         public static bool playingMusic = false;
         public static bool drawHUD = true;
-        public static bool drawOutline = true;
-        public static bool playMusic = true;
+        public static bool drawOutline = false;
+        public static bool playMusic = false;
         public static bool writeDebug = true;
         public const int maxView = 20;
         public const int cellSize = 20;
