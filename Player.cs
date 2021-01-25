@@ -14,6 +14,7 @@ namespace DoomCloneV2
         private int xPos { get; set; }
         private int yPos { get; set; }
         private int playerID = 0;
+        private int actionPoints = 5;
         private Gun playerGun;
         public Directions dir = Directions.UP;
         public Bitmap playerView;
@@ -137,6 +138,20 @@ namespace DoomCloneV2
         public Directions GetDirection()
         {
             return this.dir;
+        }
+
+        public int ChangeActionPoints(int modify)
+        {
+            this.actionPoints += modify;
+            if (actionPoints < 0)
+            {
+                actionPoints = 0;
+            }
+            if (actionPoints > 5)
+            {
+                actionPoints = 5;
+            }
+            return this.actionPoints;
         }
         public void ChangeDirection(String direction)
         {

@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+
+
 namespace DoomCloneV2
 {
 
@@ -15,7 +19,7 @@ namespace DoomCloneV2
      */
     public static class Globals
     {
-
+        public  enum UnitType { Devil, SoldierGun , Player };
         public static Cell[,] cellListGlobal;
         public static bool SinglePlayer = true;
         public static bool drawGun = true;
@@ -25,6 +29,11 @@ namespace DoomCloneV2
         public static bool drawn = true;
         public static bool Pause = false;
         public static bool pauseForInfo = false;
+        public static bool playingMusic = false;
+        public static bool drawHUD = true;
+        public static bool drawOutline = true;
+        public static bool playMusic = true;
+        public static bool writeDebug = true;
         public const int maxView = 20;
         public const int cellSize = 20;
         //Draw directin /Drew gun //Turn gun back //draw client confirm //draw server confirm //Draw message //Draw Server receive
@@ -46,7 +55,11 @@ namespace DoomCloneV2
         public static Color drawColor;
         public static Color roofColor;
         public static System.Media.SoundPlayer music = new System.Media.SoundPlayer();
-        public static bool playingMusic = false;
+        public static DateTime lastPlayerMusic = DateTime.Now;
+
+        [DllImport("winmm.dll")]
+        static extern Int32 mciSendString(string command, StringBuilder buffer, int bufferSize, IntPtr hwndCallback);
+
 
 
         /// <summary>
@@ -97,21 +110,39 @@ namespace DoomCloneV2
             }
         }
 
-        public static void StartMusic()
+
+        
+
+        public static void Play(string audioPath)
         {
-            if (! playingMusic)
+            if (playMusic)
             {
-                music.Play();
-                playingMusic = true;
+                mciSendString(@"open " + audioPath + " type waveaudio alias anAliasForYourSound", null, 0, IntPtr.Zero);
+                mciSendString(@"seek anAliasForYourSound to start", null, 0, IntPtr.Zero);
+                mciSendString(@"play anAliasForYourSound", null, 0, IntPtr.Zero);
             }
+                
+            
+            
         }
+
         public static void StopMusic()
         {
-            if (playingMusic)
+            mciSendString(@"close anAliasForYourSound", null, 0, IntPtr.Zero);
+        }
+
+        public static void WriteDebug(String tag, String message, bool print){
+
+            if (print && writeDebug)
             {
-                music.Stop();
-                playingMusic = false;
+                Debug.WriteLine("\n---------------------");
+                Debug.WriteLine("Debug at :" + tag);
+                Debug.WriteLine(message);
+                Debug.WriteLine("---------------------");
+
             }
         }
+
+
     }
 }

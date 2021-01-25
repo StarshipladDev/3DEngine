@@ -12,7 +12,7 @@ namespace DoomCloneV2
 
         Player player;
         Bitmap[] drawImageArray;
-        public Hud(Player newPlayer)
+        public Hud(ref Player newPlayer)
         {
             player = newPlayer;
             drawImageArray = new Bitmap[8];
@@ -37,12 +37,17 @@ namespace DoomCloneV2
                 drawImageArray[i] = Globals.CropImage(drawImageArray[i], new Rectangle(x, y, size, size));
             }
         }
+
+        public void ChangePlayer(Player p)
+        {
+            this.player = p;
+        }
         public void DrawHud(Graphics g, int width = 100, int height = 100)
         {
             int x = width / 3;
             int y = height - drawImageArray[0].Height;
+            g.FillRectangle(new SolidBrush(Color.Gray), new Rectangle(0,y,width,height));
             g.DrawImage(drawImageArray[Globals.animations[0]], new Point(x, y));
-            g.FillRectangle(new SolidBrush(Color.Gray), new Rectangle(x - drawImageArray[0].Width, y, drawImageArray[0].Width, drawImageArray[0].Width));
             String stringToDraw;
             if (player.GetHealth() < 1)
             {
@@ -52,7 +57,9 @@ namespace DoomCloneV2
             {
                 stringToDraw = "<3 " + player.GetHealth();
             }
-            g.DrawString(stringToDraw, new Font("times", 20), new SolidBrush(Color.Red), x - drawImageArray[0].Width, y);
+            g.DrawString(stringToDraw, new Font("times", 20), new SolidBrush(Color.Red), x - drawImageArray[0].Width, y + drawImageArray[0].Height / 2);
+            stringToDraw = "Action Points:" + player.ChangeActionPoints(0);
+            g.DrawString(stringToDraw, new Font("times", 20), new SolidBrush(Color.Blue), x + drawImageArray[0].Width, y+drawImageArray[0].Height/2);
 
         }
 
