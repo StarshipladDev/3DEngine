@@ -53,6 +53,10 @@ namespace DoomCloneV2
         public void Draw(Graphics g)
         {
             g.DrawImage(this.cursorImage, x-(this.cursorImage.Width/2), y-(this.cursorImage.Height / 2));
+            if (Globals.drawOutline)
+            {
+                g.DrawRectangle(new Pen(Color.Red), new Rectangle(x - (this.cursorImage.Width / 2), y - (this.cursorImage.Height / 2), this.cursorImage.Width, this.cursorImage.Height));
+            }
         }
         public int[] GetCoords()
         {

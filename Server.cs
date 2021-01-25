@@ -17,7 +17,7 @@ namespace DoomCloneV2
         TcpClient[] clients = new TcpClient[10];
         TcpListener[] listeners = new TcpListener[10];
         int counter = 0;
-        bool yeet = true;
+        public bool yeet = true;
         TcpListener listener;
         public Server(String address,String port)
         {
@@ -41,6 +41,7 @@ namespace DoomCloneV2
                     args[0] = clients[counter];
                     args[1] = this;
                     thread[counter] = new Thread(ThreadFunctions.Listen);
+                    thread[counter].IsBackground = true;
                     thread[counter].Start(args);
                     Thread.Sleep(1000);
                     SendClientDetails(this);

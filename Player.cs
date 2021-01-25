@@ -14,10 +14,11 @@ namespace DoomCloneV2
         private int xPos { get; set; }
         private int yPos { get; set; }
         private int playerID = 0;
+        private int actionPoints = 5;
         private Gun playerGun;
         public Directions dir = Directions.UP;
         public Bitmap playerView;
-        public String palyerFileName;
+        public String playerFileName;
         public int health = 20;
         bool dead = false;
 
@@ -27,7 +28,7 @@ namespace DoomCloneV2
             this.yPos = y;
             this.xPos = x;
             this.playerID = iD;
-            this.palyerFileName = playerFileName;
+            this.playerFileName = playerFileName;
 
         }
         public void doDamage(int damage)
@@ -54,8 +55,13 @@ namespace DoomCloneV2
         {
             return this.playerID;
         }
+        public int GetHealth()
+        {
+            return this.health;
+        }
         private void CreateGun()
         {
+            /*
             Random rand = new Random();
             String Camo = "00" + (rand.Next(3) + 2);
             String Damage = "00" + (rand.Next(2) + 1);
@@ -65,7 +71,19 @@ namespace DoomCloneV2
             int damage = rand.Next(21);
             Debug.WriteLine("New Gun with Camo/Damage: " + Camo + " \\ " + Damage);
             this.playerGun = new Gun(Camo, "001", Damage, Ammo, "001", "000", "000", "000", Sight, Grip, damage);
-            this.playerView = GetPlayerGun();
+            this.playerView = GetPlayerGun()[0];
+            */
+
+            Random rand = new Random();
+            String Camo = "444";
+            String Damage = "444";
+            String Sight = "444";
+            String Grip =  "444";
+            String Ammo = "444";
+            int damage = rand.Next(21);
+            Debug.WriteLine("New Gun with Camo/Damage: " + Camo + " \\ " + Damage);
+            this.playerGun = new Gun(Camo, "444", Damage, Ammo, "444", "444", "444", "444", Sight, Grip, damage);
+            this.playerView = GetPlayerGun()[0];
         }
         public int GetGunDamage()
         {
@@ -79,7 +97,11 @@ namespace DoomCloneV2
         {
             this.CreateGun();
         }
-        public Bitmap GetPlayerGun()
+        public void updateGunSize(int x, int y)
+        {
+            this.playerGun.UpdateGunSize(x, y);
+        }
+        public Bitmap[] GetPlayerGun()
         {
             return playerGun.GetImage();
         }
@@ -116,6 +138,20 @@ namespace DoomCloneV2
         public Directions GetDirection()
         {
             return this.dir;
+        }
+
+        public int ChangeActionPoints(int modify)
+        {
+            this.actionPoints += modify;
+            if (actionPoints < 0)
+            {
+                actionPoints = 0;
+            }
+            if (actionPoints > 5)
+            {
+                actionPoints = 5;
+            }
+            return this.actionPoints;
         }
         public void ChangeDirection(String direction)
         {

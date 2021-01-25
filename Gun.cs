@@ -12,6 +12,8 @@ namespace DoomCloneV2
     public class Gun
     {
         /*
+         * !!!!!!!File names!!!!
+        444 is testing for all
          * muzzle_Flare -> Flare_[bullet Type]_[DamageRate]_[Name]
 receiver -> Receiver_[Camo Code]_[DamageRate]_[Name]
 ejection-> Ejection_[bullet Type]_[DamageRate]_[Name]
@@ -35,6 +37,7 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
         String style_Code;// 000- Ungloved White
         String sight_Code;// 000 - Irons/No scope // 001 -Red dot
         String grip_Type; // 000 - Medium Grip // 001 -Bipod // 002- L        Bitmap muzzle_Flare;
+        Bitmap[] animation;
         Bitmap receiver;
         Bitmap ejection;
         Bitmap front_Body;
@@ -50,6 +53,20 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
         Bitmap picture;
         Bitmap pictureShoot;
         System.Media.SoundPlayer player;
+        /// <summary>
+        /// Gun constructor takes a numerical code for rach component and then stores the image array of the created weapon bitmaps.
+        /// </summary>
+        /// <param name="camo_Code"></param>
+        /// <param name="bullet_Type"></param>
+        /// <param name="damage_Rate"></param>
+        /// <param name="ammo_Cap"></param>
+        /// <param name="uniform_Code"></param>
+        /// <param name="armour_Code"></param>
+        /// <param name="race_Code"></param>
+        /// <param name="style_Code"></param>
+        /// <param name="sight_Code"></param>
+        /// <param name="grip_Type"></param>
+        /// <param name="damage"></param>
         public Gun(String camo_Code, String bullet_Type, String damage_Rate, String ammo_Cap, String uniform_Code, String armour_Code, String race_Code, String style_Code, String sight_Code, String grip_Type, int damage)
         {
             this.damage = damage;
@@ -63,8 +80,68 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
             this.style_Code = style_Code;// 000- Ungloved White
             this.sight_Code = sight_Code;// 000 - Irons/No scope // 001 -Red dot
             this.grip_Type = grip_Type;
-            this.buildGun();
+            //this.buildGun();
+            animation = BuildGunAnimated();
         }
+
+        /// <Author> Starshipladdev </Author>
+        /// <Updated12/01/2021 </Updated>
+        /// 
+        /// <summary>buildGunAnimated uses <see cref="setComponent"/> to Find the 8 Frame images of each 
+        /// gun part, and then combines them 8 times into 8 unique frames so that there is an array to animate.
+        /// </summary>
+        /// <returns> An array of each Bitmap frame of the combined animated gun </returns>
+        private Bitmap[] BuildGunAnimated()
+        {
+            Bitmap[] gunFrames= new Bitmap[8];
+            setComponent("Barrel");
+            //setComponent("Muzzle_Flare");
+            setComponent("Hand");
+            setComponent("Grip");
+            setComponent("Ejection");
+            setComponent("Rail");
+            setComponent("Sight");
+            setComponent("Front_Body");
+            setComponent("Receiver");
+            //setComponent("Token");
+            setComponent("Arm");
+            setComponent("Magazine");
+            Graphics g = null;
+            int layer = 0;
+            for (int i = 0; i < gunFrames.Length; i++)
+            {
+
+                if (i - 4 >= 0)
+                {
+                    layer = 1;
+                }
+                picture = new Bitmap(arm.Width, arm.Height, PixelFormat.Format32bppPArgb);
+                Rectangle rec = new Rectangle((i % 4) + (i % 4) * (arm.Width / 4), layer * (arm.Height / 2), arm.Width / 4, arm.Height / 2);
+                Debug.WriteLine(String.Format("Rectangle made with x,y {0},{1} and width/height {2}/{3}", rec.X, rec.Y, rec.Width, rec.Height));
+                g = Graphics.FromImage(picture);
+                g.DrawImage(this.barrel, new Point(0, 0));
+                g.DrawImage(this.hand, new Point(0, 0));
+                g.DrawImage(this.grip, new Point(0, 0));
+                g.DrawImage(this.rail, new Point(0, 0));
+                g.DrawImage(this.sight, new Point(0, 0));
+                g.DrawImage(this.front_Body, new Point(0, 0));
+                g.DrawImage(this.receiver, new Point(0, 0));
+                g.DrawImage(this.ejection, new Point(0, 0));
+                //g.DrawImage(this.token, new Point(0, 0));
+                g.DrawImage(this.arm, new Point(0, 0));
+                g.DrawImage(this.magazine, new Point(0, 0));
+                picture = picture.Clone(rec, picture.PixelFormat);
+                gunFrames[i] = picture;
+            }
+            player = new System.Media.SoundPlayer("Resources/Sound/Bang_001_001.wav");
+
+            g.Dispose();
+            return gunFrames;
+
+        }
+        /// <summary>
+        /// buildGun is an old (13/01/2021) method that builds a static gun iamge, as per <see cref="BuildGunAnimated"/>
+        /// </summary>
         private void buildGun()
         {
             setComponent("Barrel");
@@ -90,7 +167,6 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
             g.DrawImage(this.sight, new Point(0, 0));
             g.DrawImage(this.front_Body, new Point(0, 0));
             g.DrawImage(this.receiver, new Point(0, 0));
-
             g.DrawImage(this.ejection, new Point(0, 0));
             //g.DrawImage(this.token, new Point(0, 0));
             g.DrawImage(this.arm, new Point(0, 0));
@@ -106,7 +182,6 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
             g.DrawImage(this.sight, new Point(0, 0));
             g.DrawImage(this.front_Body, new Point(0, 0));
             g.DrawImage(this.receiver, new Point(0, 0));
-
             g.DrawImage(this.ejection, new Point(0, 0));
             //g.DrawImage(this.token, new Point(0, 0));
             g.DrawImage(this.arm, new Point(0, 0));
@@ -116,28 +191,65 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
             player = new System.Media.SoundPlayer("Resources/Sound/Bang_" + this.bullet_Type + "_" + this.damage_Rate + ".wav");
             Debug.WriteLine("Resources/Sound/Bang_" + this.bullet_Type + "_" + this.damage_Rate + ".wav");
         }
-
+        /// <summary>
+        /// GetSound returns the <see cref="SoundPlayer"/> associated with this instance.
+        /// This is to get a sound to play as required.
+        /// </summary>
+        /// <returns>The gun sound attatched to this Gun </returns>
         public System.Media.SoundPlayer GetSound()
         {
             return this.player;
         }
-        public Bitmap GetImage()
+        /// <summary>
+        /// GetImage returns the <see cref="Bitmap"/> array associated with this instance's animation.
+        /// This is to have an iteratable array of animation frames to animate. 
+        /// </summary>
+        /// <returns>The frame array attatched to this Gun </returns>
+        public Bitmap[] GetImage()
         {
-            return this.picture;
+            //return this.picture;
+            return this.animation;
         }
+        /// <summary>
+        /// GetDamage returns damage value associated with this instance.
+        /// This is to have the damage value associated wih the gun isntance. 
+        /// </summary>
+        /// <returns>The damage value assosiated with thi gun instance </returns>
         public int GetDamage()
         {
             return this.damage;
         }
+        /// <summary>
+        /// GetImageShoot is outdated as of 12/01/2021 due to animations
+        /// </summary>
+        /// <returns>The static bitmap image of the gun shooting</returns>
         public Bitmap GetImageShoot()
         {
-            return this.pictureShoot;
+            return this.animation[0];
         }
+        /// <summary>
+        /// UpdateGunSize is used to update the scale of all frames in 'animation'
+        /// This is so all gun frames drawn are to the correct scale.
+        /// This uses <see cref="Globals.ResizeImage(Image, int, int)"/>
+        /// </summary>
+        /// <param name="x">The width of the new scale</param>
+        /// <param name="y">The height of the new scale</param>
+        public void UpdateGunSize(int x, int y)
+        {
+            for (int i = 0; i < animation.Length; i++)
+            {
+                animation[i] = Globals.ResizeImage(animation[i], x, y);
+            }
+        }
+        /// <summary>
+        /// setComponent take a string name and finds relevant image files that are compatible wih the current Gun instance.
+        /// This is to Select a valid image for randomly generating Gun classes.
+        /// </summary>
+        /// <param name="gunPart"> One of the compatible images for this Gun instance from the 'Resources' folder</param>
         private void setComponent(String gunPart)
         {
             Random rand = new Random();
-            string RunningPath = AppDomain.CurrentDomain.BaseDirectory;
-
+            String RunningPath = AppDomain.CurrentDomain.BaseDirectory;
             String imgPath = RunningPath + "Resources\\Images\\Gun_Parts\\" + gunPart + "\\";
             String[] possibleImgs = System.IO.Directory.GetFiles(imgPath, "*.png");
             List<String> relevantImgs = new List<String>();

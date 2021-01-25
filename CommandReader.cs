@@ -23,8 +23,10 @@ namespace DoomCloneV2
             this.playerUnits = playerUnits;
             this.units = units;
         }
-        public void MovePlayer(int playerID,String command)
+        public void MovePlayer(int playerID,String command, ref Client thisClient, ref String commandStringsNew, bool server)
         {
+           
+
             int x = Int32.Parse(command.Substring(3, 2));
             int oldx = players[x].GetX();
             int oldy = players[x].Gety();
@@ -52,19 +54,30 @@ namespace DoomCloneV2
                 {
                     Debug.WriteLine("Removing player on " + oldx + "," + oldy + ", setting new player on" + players[x].GetX() + "," + players[x].Gety());
                     cellList[oldx, oldy].RemoveUnit();
-                    Debug.WriteLine("Moving palyer's file name is "+ "Resources/Images/Friendly/" + players[x].palyerFileName + "/" + players[x].palyerFileName + "_Idle.png");
-                    playerUnits[x] = (cellList[players[x].GetX(), players[x].Gety()].createUnit(players[x].GetX(), players[x].Gety(), new Bitmap("Resources/Images/Friendly/"+ players[x].palyerFileName+"/"+ players[x].palyerFileName+"_Idle.png"), new Bitmap("Resources/Images/Friendly/"+ players[x].palyerFileName +"/"+players[x].palyerFileName+"_Death.png")));
-                    if (cellList[oldx, oldy].GetisUnitPresent())
-                    {
-                        Debug.WriteLine("There IS a unit on the old coords " + oldx + "," + oldy);
-                    }
-                    if (cellList[players[x].GetX(), players[x].Gety()].GetisUnitPresent())
-                    {
-                        Debug.WriteLine("There IS a unit on the new coords " + oldx + "," + oldy);
-                    }
+                    Debug.WriteLine("Moving palyer's file name is " + "Resources/Images/Friendly/" + players[x].playerFileName + "/" + players[x].playerFileName + "_Idle.png");
+                    playerUnits.Add(Globals.cellListGlobal[players[x].GetX(), players[x].Gety()].CreateUnit(players[x].GetX(), players[x].Gety(), Globals.UnitType.Player, "Resources/Images/Friendly/" + players[x].playerFileName + "/" + players[x].playerFileName + "_Idle.png"));
+
                 }
+
             }
         }
+
+        public void ChangeDirection(int id,String command)
+        {
+            char directionChar = Char.Parse(command.Substring(5, 1));
+            Debug.WriteLine("Rotating Player " + id + " " + directionChar);
+            switch (directionChar)
+            {
+                case 'L':
+                    players[id].ChangeDirection("Left");
+                    break;
+                case 'R':
+                    players[id].ChangeDirection("Right");
+                    break;
+            }
+        }
+
+
         public void RunProjectile(String command, ref Client thisClient,ref String commandStringsNew,bool server)
         {
             int projCount = Int32.Parse(command.Substring(3, 3));
@@ -83,19 +96,19 @@ namespace DoomCloneV2
                 int damage = units[unitNumber].projs[projCounter].GetDamage();
 
                 int returnCode = units[unitNumber].projs[projCounter].RunProjecticle(this.cellList);
-                Debug.WriteLine("Form1: Fireball returncode is :" + returnCode);
+                Debug.WriteLine("Form1: "+ units[unitNumber].projs[projCounter].name + " returncode is :" + returnCode);
 
                 if (returnCode > -2)
 
                 {
-                    Debug.WriteLine("Fireball hit something with returnCode" + returnCode);
+                    Debug.WriteLine(units[unitNumber].projs[projCounter].name + "hit something with returnCode" + returnCode);
                     units[unitNumber].projs.RemoveAt(projCounter);
                     projCounter--;
 
                 }
                 if (returnCode > -1)
                 {
-                    Debug.WriteLine("Fireball hit player " + returnCode);
+                    Globals.WriteDebug("CommandReader()->RunProjectiles->",String.Format("unitNumber is {0} and projCounter is{1} as palyer {2:000} got hit",unitNumber,projCounter, returnCode),true);
                     String ProjectileHitString = "SHP" + String.Format("{0:000}{1:000}", returnCode, damage);
                     if (!Globals.SinglePlayer && server)
                     {

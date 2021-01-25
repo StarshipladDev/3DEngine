@@ -19,6 +19,7 @@ namespace DoomCloneV2
         int type = 0;
         Unit unitOnCell = null;
         Projectile projOnCell = null;
+        Corpse corpseOnCell = null;
         public Cell(bool mat, Color drawColor, Color floorColor, Color roofColor)
         {
             this.mat = mat;
@@ -55,17 +56,46 @@ namespace DoomCloneV2
         {
             this.projOnCell = null;
         }
+        public Projectile GetProjectile()
+        {
+            return this.projOnCell;
+        }
         public void RemoveUnit()
         {
             this.isUnitOnCell = false;
             this.unitOnCell = null;
         }
-        public Unit createUnit(int x, int y,Bitmap unitPic, Bitmap unitPicDead)
+        public Unit CreateUnit(int x, int y,Globals.UnitType ut = Globals.UnitType.Devil , String backupImage = null)
         {
             this.isUnitOnCell = true;
-            this.unitOnCell = new Unit();
-            this.unitOnCell.setUpUnit(x,y,unitPic, unitPicDead);
+            if (ut == Globals.UnitType.Player)
+            {
+                this.unitOnCell = new Unit(backupImage);
+                this.unitOnCell.setUpUnit(x, y, ut, true);
+
+            }
+            else
+            {
+
+                this.unitOnCell = new Unit("Resources/Images/Enemy/" + ut + "/" + ut + "_Idle.png");
+                this.unitOnCell.setUpUnit(x, y, ut, false);
+
+            }
             return this.unitOnCell;
+        }
+
+        public Corpse CreateCorpse(int x, int y, Globals.UnitType ut = Globals.UnitType.Devil, String backupDeathImage = null)
+        {
+            if (ut == Globals.UnitType.Player)
+            {
+                this.corpseOnCell = new Corpse(backupDeathImage, 400);
+            }
+            else
+            {
+
+                this.corpseOnCell = new Corpse("Resources/Images/Enemy/" + ut + "/" + ut + "_Death.png", 400);
+            }
+            return this.corpseOnCell;
         }
         public bool GetisUnitPresent()
         {
@@ -203,6 +233,10 @@ namespace DoomCloneV2
                         if (this.projOnCell != null)
                         {
                             projOnCell.Draw(g, drawLength, drawHeight, topLeft);
+                        }
+                        if(this.corpseOnCell != null)
+                        {
+                            corpseOnCell.Draw(g, drawLength, drawHeight, topLeft);
                         }
                     }
 

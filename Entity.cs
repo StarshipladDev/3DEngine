@@ -25,74 +25,65 @@ namespace DoomCloneV2
         public Point bottomRight = new Point(-1, -1);
         public bool alive = true;
         public bool dying = false;
-        public void Draw(Graphics g, int drawLength, int drawHeight, int[] topLefta)
+        private Bitmap[] rootImages = new Bitmap[8];
+
+        public Entity(String baseFile_p, int setionSize=400, bool animated= true)
         {
-            if (alive || dying)
+            if (dying)
             {
-                Bitmap drawImage = unitImage;
-                int layer = 0;
-                int animNumber = (Globals.animations[0] + offset) % Globals.MAXFRAMES;
-                if (animNumber >= Globals.MAXFRAMES / 2)
+                offset = -Globals.animations[0];
+            }
+            Globals.WriteDebug("Entity -> Constructor -> ", "Base File is "+baseFile_p, true);
+            Bitmap baseFile = (Bitmap)Image.FromFile(baseFile_p);
+            if (animated)
+            {
+                for (int i = 0; i < Globals.MAXFRAMES; i++)
                 {
-                    layer = 1;
-                }
-                Rectangle section = new Rectangle(new Point(sectionSize * (animNumber % 4) + ((animNumber % (Globals.MAXFRAMES / 2) + 1) * (sectionSize/20)), (sectionSize * layer) + ((sectionSize/20) * (layer + 1))), new Size(sectionSize, sectionSize));
-                drawImage = (Globals.CropImage(drawImage, section));
-                //drawImage=ResizeImage(drawImage,drawImage.Width / (((maxDepth - loopFromBack) * 2) -3 ), drawImage.Height / (((maxDepth - loopFromBack) * 2) -3));
-                drawImage = Globals.ResizeImage(drawImage, drawLength/drawRatio, drawHeight/drawRatio);
-                g.DrawImage(drawImage, new Point(topLefta[0], topLefta[1]));
-                this.topLeft.X = topLefta[0];
-                this.topLeft.Y = topLefta[1];
-                this.bottomRight.X = topLefta[0] + drawImage.Width;
-                this.bottomRight.Y = topLefta[0] + drawImage.Height;
-                if (alive)
-                {
-                    Random rand = new Random();
-                    if (rand.Next(5) == 3 && alive)
+                    int layer = 0;
+                    if (i >= Globals.MAXFRAMES / 2)
                     {
-                        if (rand.Next(2) == 0)
-                        {
-                            System.Media.SoundPlayer player = new System.Media.SoundPlayer("Resources/Sound/Boof.wav");
-                            player.Play();
-                            player.Dispose();
-                        }
-                        else
-                        {
-                            System.Media.SoundPlayer player = new System.Media.SoundPlayer("Resources/Sound/Boof2.wav");
-                            player.Play();
-                            player.Dispose();
-                        }
+                        layer = 1;
                     }
-                }
-                else
-                {
-                    if ((Globals.animations[0] + offset) % Globals.MAXFRAMES == Globals.MAXFRAMES - 1)
-                    {
-                        this.returnImage = drawImage;
-                        dying = false;
-                    }
+                    Rectangle section = new Rectangle(new Point(sectionSize * (i % 4) + ((i % (Globals.MAXFRAMES / 2) + 1) * (sectionSize / 20)), (sectionSize * layer) + ((sectionSize / 20) * (layer + 1))), new Size(sectionSize, sectionSize));
+                    rootImages[i] = Globals.CropImage(baseFile, section);
                 }
             }
             else
             {
-                if (!animated)
-                {
-                    this.returnImage = Globals.ResizeImage(unitImage, drawLength/drawRatio, drawHeight/drawRatio);
-                }
-                else
-                {
-                    this.returnImage = Globals.ResizeImage(this.returnImage, drawLength / drawRatio, drawHeight / drawRatio);
-                }
-                int excess = 0;
-                if (drawRatio > 1)
-                {
-                    excess = drawLength / 2;
-                }
-                g.DrawImage(this.returnImage, new Point(topLefta[0]+ excess, topLefta[1]+ excess));
-                this.topLeft.X = topLefta[0] + excess;
-                this.topLeft.Y = topLefta[1] + excess;
-                this.bottomRight.X = topLefta[0] + unitImage.Width + excess;
-                this.bottomRight.Y = topLefta[0] + unitImage.Height + excess;
+                rootImages[0] = baseFile;
+            }
+            
+        }
+        public virtual void Draw(Graphics g, int drawLength, int drawHeight, int[] topLefta)
+        {
+            
+            Bitmap drawImage;
+            int animNumber;
+            if (animated)
+            {
+                animNumber = (Globals.animations[0] + offset) % Globals.MAXFRAMES;
+            }
+            else
+            {
+                animNumber = 0;
+            }
+            drawImage = Globals.ResizeImage(rootImages[animNumber], drawLength/drawRatio, drawHeight/drawRatio);
+            Globals.WriteDebug("Entity->Draw->", "animNumber is " + animNumber + " drawImage Height is" + rootImages[animNumber],false);
+            this.topLeft.X = topLefta[0] + ((drawRatio / 2) * drawImage.Width);
+            this.topLeft.Y = topLefta[1] + ((drawRatio / 2) * drawImage.Height);
+            this.bottomRight.X = topLeft.X + drawImage.Width;
+            this.bottomRight.Y = topLeft.Y + drawImage.Height;
+            g.DrawImage(drawImage, new Point(topLeft.X, topLeft.Y));
+            if (dying && (Globals.animations[0] + offset) % Globals.MAXFRAMES == Globals.MAXFRAMES - 1)
+            {
+                rootImages[0] = rootImages[Globals.MAXFRAMES - 1];
+                dying = false;
+                animated = false;
+            }
+            if (Globals.drawOutline)
+            {
+                g.DrawRectangle(new Pen(Color.Red), new Rectangle(topLeft.X,topLeft.Y,drawImage.Width,drawImage.Height));
+                g.DrawRectangle(new Pen(Color.Cyan), new Rectangle(topLefta[0], topLefta[1], drawLength,drawHeight));
             }
 
         }
