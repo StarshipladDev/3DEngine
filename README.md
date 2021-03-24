@@ -59,197 +59,42 @@ Below is the process used to draw a '3d' world.
 ![MapMakerImage](Gameplay.png)
 
 ## Latest Update Notes:
-Animated Weapon Alpha
+Text Prompt Update
 
 To Sum Up:
-Remove Memory Leak bug for good practice 
 
-Add new Enemy Unit type- SoldierGun for fun
+Add Escape key press will exit gameplay
 
-Add new Animated Projectile type - target (For when SoldierGun targets player) for variety in combat
+Add Left-arrow key as the 'test' button
 
-Add New Skin- Rambo for a request I got on TikTok
-
-Add New Audio Track - Combat.Wav for player enjoyment
-
-Add Animated player HUD to make game appear more professional 
-
-Add Synced music playing - both background music and sound in-game for better immersion 
-
-Add debug hitboxes for debug purposes
-
-Add UnitType to keep consistent unit generation
-
-Add DebugTimer for better analytics 
-
-Add Corpse Object to allow player to move through bodies 
-
-Add Loading screen for aesthetic 
+Add Test text prompt appearing on left-arrow press
 
 
 ```
+	24/03/2021{
+		Issues Encountered:
+		TextDispaly would draw the Image away from the text.
+			This was due to the iamge containign 33% transparent flaot-space. This was resolved by adding
+			a 'bump' down where the text is displayed.
+		DoomCLoneV2 -> Resources -> Add 'TextBackground' .PNG file to be displayed when text prompts appeared
+		DoomCloneV2 -> Overlays -> Add 'Overlays' Folder of classes. This is to store overlay data. May move HUD 
+			there.
+		DoomCloneV2 -> Overlays -> TextDisplays.cs -> Add class 'TextDisplay'. This is a class that can be called from a 
+				draw method, as it has an internal draw method that draws text over the aformentioned 'TextBackground' png.
+		Form1.cs -> Add refrence to a TextDisplay instance as 'textDisplay' to be called in UpdateForm();
+		Form1.cs->OnKeyUp() -> Add handler for 'left key' pressed. This si to have a key for testing new controls.
+				In this case, changing a new bool 'drawPrompt'. When 'drawPrompt' true
+				UpdateForm will call 'dispalyText's draw function
+			->Add Universal case of 'ESC' Key closing the App, for easier testing and usability
 
-20/01/2021{
-	HUD.cs -> Add Hud class that builds and conains the logic and graphics for a Hud icon, similar to how the 'gun.cs' class works.
-		This is so Huds can be tested independently and to provide a more 'game-y' excperience.
-	HUD.cs -> DrawHud() -> Add method that is passed Graphics and draw a HUD to it to be able to call the Hud class
-	HUD.cs -> Hud() -> Add handling in constructer that gets a subimage for each of a given player's 'idle' aniamtions.
-		This subimage is a face, and is stored for each frame in an array. This lets an aniamted player face be easily drawn.
-	Form1.cs -> BeginSession() -> Add a Hu instance 'playerHud' to test Hud
-	Form1.cs -> UpdateForm() -> Modify so end of the draw function draws playerHud with each global anim frame to test Hud
-	Globals.cs -> Add bool 'drawHUD' so that Hud can be toggled. This is to make good developer content
-
-	TODO: Comment 'DrawHud()' , Create more weapon versions , test new enemy
-}
-22/01/2021{
-Issues Encountered:
-	Using System.Media.MediaPlayer did let the application run multiple synced soundfiles, however since the Mediapalyer class 
-		also handles video, it re-set the size of the application, causing issues.
-		This was resolved by using mci Strings instead.
-
-	Form1.cs->TimerCall() -> Add a check on each 'tick' to see if the time tha had passed since music last played
-		is the same ammount of time a repeatable song palys for. If it is, it calls 'PlayMusic' again. This is to have
-		looping music in the background.
-	Form1.cs->BeginSession() & Form1() -> Add the full URL to both calls of 'PlayMusic()', rather than local URL's from 
-		application launch. This is so the new 'MCIStringSend' commands work correctly.
-	Globals.cs -> PlayMusic() & StopMusic() -> Add PlayMusic and StopMusic commands that use Direct exernal MCI String calls
-		to a system's audio player, based on a song file path. This is so Music can be played with in-game sound effects
-}
-23/01/2021{
-Issues Encountered:
-	When changing Entity's Image Draw functions from dynamically cropping and scaling an image to scaling a base array
-		of root images, iamges with scaleRatios '1' would not display.
-		This was due to the scale ratio drawing 'scaleRatio-2 * width' into a cell, and not scaleRatio/2.
-		This meant scale 1 things were drawn 1 length to the left and up.
-		This was resolved by changing it to  'scaleRation/2 * width.
-
-	Raycast projectiles would spawn and run on the same turn, making SoldierGun enemies instantly hit the player.
-		This was resolved by giving the projectile a 'isRaycast' and 'isRaycastJustMade' variable.
-		This meant before a raycast projectile actioned, it coudl be checked to see if it had just been made.
-
-	Globals.cs -> Add 'DrawOutlines' bool. This is to be able to test hit-box receptivness. Add 'PlayMusic' bool to 
-		allow other classes to play or not paly music as required.
-
-	Globals.cs -> WriteDebug() -> Add Debug Method Prin statement and 'writeDebug' bool so Debug outputs can be switched
-		at to generify debug statements. 
-
-	Globals.cs -> Add Enum 'UnitType' to differentiate enemy units. 
-
-	CursorObject->Draw() -> Add a red rectangle being drawn around x,y co-ord if Globals.DrawOutline is true for Debug.
-
-	Entity ->Draw() -> Add a red rectangle being drawn around true outline co-ord if Globals.DrawOutline is true for Debug.
-		Modify Draw so it resizes one baseIamge file from an array isntead o croppign each Draw.
-		This is to make the program more efficent. 
-		Remove akward handling of static images comapred to aniamted.
-		New system uses one Draw function. If static image, this is defined under the 'animated' variable.
-		If not animated, Draw will only ever day index '0' of the new image array.
-		This is to ahve cleaner code nad better run times
-
-	Entity ->Entity() -> Add a Cosntructor that takes a base animation image. This constructor fills a new Bitmap array
-		in Entity called 'baseImages'.
-		This cosntuctor is repeated for all inherited classes.
-	
-	
-	Unit.cs -> Added variable unitType to differentiate enemy units. 
-
-	Unit.cs-> SetUpUnit() -> Modify Constructor to take UnitType Enum instead of 2 Bitmaps. Method will programatically get
-		correct BitmapFiles for Idle and death anims. This is to refractor refrences to unit type.
-
-	Unit.cs -> GetUnitType() -> Add GetUnitType Method to return Unit type. This is to so MapGen Screen can show enemies
-
-	Unit.cs -> CreateProjectile() -> Remove the String of Projectile type. Create Projectiles based on instance's 
-		'UnitType' instead. This is for good coding practice.
-
-	Unit.cs -> Draw() -> Inherit the soundpalying parts of Draw() from Entity.cs. 
-		This is so sound effect handling only happens with Units. 
-
-	Unit.cs -> Kill() -> Modify so Unit set to not alive and cellGrid co-ords of dead unit removes that unit
-		and creates a corpse with same unit type. This is so palyers can move through corpses and to not handle
-		unit functions when unessecary as unit is dead.
-
-	Cell.cs -> CreateUnit() -> Modify Unit Setup Call to match Unit constructor change above 
-
-	MapFormGen.cs -> Move MapFormGen to 'Screens' Subfolder for consistency 
-	
-	MapGenForm.cs -> paintDrawing() - > Modify to rename to 'PaintDrawing'. Modify to draw red cell where enemy is.
-
-	Resources -> Image -> Added new Idle, death and shooting animation images for a new Enemy type 'SoldierGun' for
-		variety.
-
-	Player.cs-> Add 'actionPoints' int to limit player actions per turn.
-
-	Player.cs -> ChangeActionPoins() -> Add Method to modify Player actionPoints. It returns the remaining points so 
-		program can handle player running out of action points;
-
-	Hud.cs -> DrawHud() -> Modify so  background draws across Screen for aesthetic. Made Hud draw remaining ActionPoints for 
-		player information.
-
-	Form1.cs-> BeginSession() -> Modify the 'enemy placing' component of the method to randomly pick either Devil or 
-		SoldierGun for variety. Modify 'Setup Unit' calls to match the new Unit constructor using a UniType enum for simplicity.
-
-	Form1.cs() -> RunCommands () -> Modify so actioning players lose their ActionPoints by 1 for certain commands running.
-		If the retuned value is less than 1 9Out of actions), playerEndTurnArray is modified to be true for them, 
-		preventing further action. This is too add game mechanics and turn limitation.
-		Modify "SEE" Command to use new Uni'SetUnit()' command using Globals.UnitType.
-		Modify "ETS", End Server Turn command to reset local Action points and all palyer's action points as server 
-			so mechanics work in multiplayer
-		Modify "SHE", Shoot Enemy command so the index of the enemy hit can be -1. If this happens no Enemy is damaged
-			but player still loses action points. This is to add game mechanics.
-		Modify "SEP", Set Player on Client Side so that the last digit is the AP to give the player. This is for 
-			consistency across server+client.
-		Add Debug Time Test and average time total ant end of function. This is o test changes to effeciency.
-
-	Form1.cs() - > Modify so that any created threads 'BackgroundThread' propert true.
-		This means on Form close, all child threads are killed.
-		This is to prevent memory leaks.
-
-	Form1.cs -> CheckPlayerHasAP() -> Add Method to confirm player of set ID has ActionPoints left, if not adds command
-		to end that palyer's turn. his is to autoamte turn timings.
-
-	Form1.cs -> CursorHandler() -> Modify so it always sends a "SHE" command. This is due to the SHE  command
-		now being able to remove action points but not cause damage. 
-
-	Form1.cs->OnKeyUp() - . Add 'Globals.DrawHud' Toggle on '4' being pressed and 'Globals.DrawOutlines' 
-		being toggled on '6' for Debug. Add '7' to Toggle Globals.PlayMusic since music can get annoying.
-		'7' handler also calls 'Globals.StopMusic' if toggling to false.
-
-	Projectile.cs -> RunProjectile() -> Add Variable 'Raycast'. This is so there can be different types of attacks.
-		Modify so if projectile 'rayast', it will act liek a regualr projectile hitting a wall if it at is target co-ords.
-		This is so, if it is made ON the target co-ords, it gives palyers one turn to dodge.
-
-	Projectile.cs -> Projectile() -> Add Refrence to a 'Unit - sender' in Constructor.
-		This is so projectile can be managed from the sending unit's 'proj' array.
-	
-	Corpse.cs -> Add 'Corpse' class that inherits from Entity so that player can move through dead units while still 
-		displaying bodies.
-
-	Cell.cs -> CreateCorpse() -> Add Function to produce movable-through entity, similar to projectile.
-	Cell.cs -> Draw() -> Modify to call Entity.Draw of 'Corpse' child of Cell if it exsists. This is to render corpses.
-
-	}
-	25/01/2021{
-	Form1.cs-> BeginSession() -> Modify so form state is set to  'pauseForInfo = true' While world initalizes.
-		This is so there isn't a freeze while world is built.
-
-		Form1.cs -> UpdateForm1() -> Modify to show new Loading Screen Image instead of "Connecting to server/ building world."
-		When pauseForInfo is true. This is to have a more professional design.
-		The image used has space for a loading bar between width/2,height-(height/15)
-
-		Form1.cs-> Added "LoadPercent" variable so loadscreen can draw dynamic loading bar.
-
-		Form1.cs -> Form1() && Whole application-> Add a PrivateFontCollection to load new custom font 'DoomFont' tts.
-			This replaces all prior calls to other font families in the code
-
-		Form1.cs -> AddLoadValue() -> Add Method that autoamtically updates 'LoadPercent' varialbe and refreshes screen
-			to show dynamic loading.
-
-		Cell.cs -> CreateUnit() - > Modify so method takes a backup PNG for Player Aniamtions, since there is no set Skin
-			associated wih the 'Globals.UnitType.Player' enum. This works similar to Cell.CreateCorpse();
-	
 	}
 ```
 
 ## Latest Updates
+
+*24/03/2021 - TextPrompt*
+
+![PromoImage](TextDisplay.png)
 
 *23/01/2021 - Alpha 'Gameplay' release* 
 
@@ -275,23 +120,23 @@ Issues Encountered:
 
 ![MultiplayerImage](Multiplayer.PNG)
 
-## Next Build
+## Next Build ([ ] -Not done , [0] - Half Done , [x] - Done)
 
-End Of December -Content Build  **Delayed from September*
+End Of June 2021 -Content Build 
 
-* Enemy Variety and attack patterns
+* Enemy Variety and attack patterns [0]
 
-* Rehaul of weapon System
+* Rehaul of weapon System [0]
 
-* Main Menu
+* Main Menu [x]
 
-* Full documentation
+* Full documentation [0]
 
-* Animated Weapons
+* Animated Weapons [x]
 
-* Turn limitations (Only x moves per turn, turn ends on shoot ect.)
+* Turn limitations (Only x moves per turn, turn ends on shoot ect.) [x]
 
-* Story logs held in computors
+* Story logs held in computors [0]
 
 
 ## Skill developing
@@ -354,6 +199,8 @@ Any resource in *Executable/Resources* can be replaced with a matching file type
 The IP Address of the server can be found by opening up a command prompt on the server's computor, and typing 'ipconfig'
 
 The Program currently has the following commands:
+
+*ESC* - Exit the game 
 
 *Space* - End your turn. You will be frozen until all connected players have ended their turn.
 
