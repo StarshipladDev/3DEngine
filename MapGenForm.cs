@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DoomCloneV2.Screens;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -193,42 +194,14 @@ namespace DoomCloneV2
                 return new Point(endPoint.X, startPoint.Y);
             }
         }
-        public void paintDrawing(object sender, PaintEventArgs e)
-        {
-            if (draw)
-            {
-                Graphics g = e.Graphics;
-                for (int i = 0; i < Globals.cellListGlobal.GetLength(0); i++)
-                {
-                    for (int f = 0; f < Globals.cellListGlobal.GetLength(1); f++)
-                    {
-                        
-                        Color c = Globals.drawColor;
-                        if (Globals.cellListGlobal[i, f].GetMat()==false)
-                        {
-                            c = Globals.floorColor;
-                        }
-                        if (cellListSeePlayer[i,f] == true)
-                        {
-                            c = Globals.roofColor;
-                        }
-                        int x = (i * 10) + 50;
-                        int y = (f * 10) + 50;
-                        g.FillRectangle(new SolidBrush(c), new Rectangle(x, y, 10, 10));
-
-                    }
-                }
-               // g.Dispose();
-            }
-           
-        }
+       
         public void ResetMap()
         {
             Globals.cellListGlobal = new Cell[20, 20];
 
-            Globals.floorColor = Color.FromArgb(255, rand.Next(254), rand.Next(254), rand.Next(254));
-            Globals.drawColor = Color.FromArgb(255, rand.Next(254), rand.Next(254), rand.Next(254));
-            Globals.roofColor = Color.FromArgb(255, rand.Next(254), rand.Next(254), rand.Next(254));
+            Globals.floorColor = Color.FromArgb(255, rand.Next(200)+20, rand.Next(200) + 20, rand.Next(200) + 20);
+            Globals.drawColor = Color.FromArgb(255, rand.Next(200) + 20, rand.Next(200) + 20, rand.Next(200) + 20);
+            Globals.roofColor = Color.FromArgb(255, rand.Next(200) + 20, rand.Next(200) + 20, rand.Next(200) + 20);
             for (int i = 0; i < Globals.cellListGlobal.GetLength(0); i++)
             {
                 for (int f = 0; f < Globals.cellListGlobal.GetLength(1); f++)
@@ -236,6 +209,11 @@ namespace DoomCloneV2
                     Globals.cellListGlobal[i, f] = new Cell(true,Globals.drawColor, Globals.floorColor, Globals.roofColor);
                 }
             }
+        }
+        public void paintDrawingHandler(object sender, PaintEventArgs e)
+        {
+            MapDraw md = new MapDraw();
+            md.PaintDrawing(e.Graphics);
         }
         public void  InitializeComponent()
         {
@@ -263,7 +241,7 @@ namespace DoomCloneV2
             this.drawingPanel.BackColor = Color.Black;
             this.drawingPanel.Size = new Size(500, 300);
             this.drawingPanel.Location = new Point(0, 200);
-            this.drawingPanel.Paint +=new PaintEventHandler( paintDrawing);
+            this.drawingPanel.Paint +=new PaintEventHandler( paintDrawingHandler);
 
 
             //FORM

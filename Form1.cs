@@ -35,6 +35,7 @@ namespace DoomCloneV2
         bool serverTurn = false;
         bool menu = true;
         bool aboutOn = false;
+        bool drawMapMakeMenu = false;
         bool drawPrompt = false;
         bool[] playerEndTurnArray = new bool[20];
         bool lockPlayer = false;
@@ -44,6 +45,7 @@ namespace DoomCloneV2
         String commandString = String.Empty;
         public  String commandStringsNew = String.Empty;
         TimeSpan averageTimeToRun = TimeSpan.FromSeconds(0);
+        TimeSpan averageTimeToRunDrawing = TimeSpan.FromSeconds(0);
         PrivateFontCollection pfc;
         CommandReader cr;
         Color ColorFloor;
@@ -52,6 +54,9 @@ namespace DoomCloneV2
         DoomMenuItem play;
         DoomMenuItem about;
         DoomMenuItem back;
+
+        DoomMenuItem mapBack;
+        DoomMenuItem map;
         TextDisplay textDisplay;
         Hud playerHud;
         /// <summary>
@@ -61,11 +66,16 @@ namespace DoomCloneV2
         {
             Globals.Play(Application.StartupPath + "/Resources/Sound/SpaceWhales.wav");
             ReadConfig();
+            //These menu items are handled via their 'OnClick' commands, run from the mosuehandler method
             DoomMenuItem.actionfunction ac1 = BeginSession;
             DoomMenuItem.actionfunction ac2 = ToggleFunc;
+            DoomMenuItem.actionfunction ac3 = ToggleMapFunc;
+            DoomMenuItem.actionfunction ac4 = BackMenu;
             play = new DoomMenuItem(300, 200, Image.FromFile("Resources/Images/Menu/Play.png"), ac1);
             about = new DoomMenuItem(300, 300, Image.FromFile("Resources/Images/Menu/About.png"), ac2);
-            back = new DoomMenuItem(400, 400, Image.FromFile("Resources/Images/Menu/Back.png"), ac2);
+            back = new DoomMenuItem(400, 400, Image.FromFile("Resources/Images/Menu/Back.png"), ac4);
+            map = new DoomMenuItem(300, 400, Image.FromFile("Resources/Images/Menu/MapMaker.png"), ac3);
+            mapBack = new DoomMenuItem(400, 400, Image.FromFile("Resources/Images/Menu/Back.png"), ac4);
             pfc = new PrivateFontCollection();
             pfc.AddFontFile("Resources/Fonts/Doomfont.ttf");
             InitializeComponent();
@@ -81,13 +91,14 @@ namespace DoomCloneV2
 
             menu = false;
             Globals.pauseForInfo = true;
-            AddLoadValue(0);
+            AddLoadValue(10);
             //Start up combat player
             thisPlayer = new Player(4, 4, 1, 0, "Player" + String.Format("{0:00}", Int32.Parse(Globals.playerFileName)));
+            thisPlayer.SetPowerUp(Player.PowerUpTypes.KATANA);
             playerUnits.Add(null);
             players.Add(thisPlayer);
             thisPlayer = players[0];
-            AddLoadValue(20);
+            AddLoadValue(10);
             //this.SetStyle(ControlStyles.OptimizedDoubleBuffer,true);
             //this.SetStyle(ControlStyles.AllPaintingInWmPaint, true);
             //this.SetStyle(ControlStyles.UserPaint, true);
@@ -99,8 +110,7 @@ namespace DoomCloneV2
             {
                 Globals.flags[i] = false;
             }
-
-            thisPlayer.playerView = Globals.ResizeImage(thisPlayer.playerView, this.Width, this.Height);
+            Debug.WriteLine("Updating GunSize");
             thisPlayer.updateGunSize(this.Width/2, this.Height/2);
             //Put player at first empty area
             Random rand = new Random();
@@ -108,7 +118,7 @@ namespace DoomCloneV2
             while (!playerDown)
             {
 
-                Point playerPoint = getFreeCell(rand);
+                Point playerPoint = Globals.GetFreeCell(rand);
                 if (!Globals.cellListGlobal[playerPoint.X, playerPoint.Y].GetMat())
                 {
                     thisPlayer.SetX(playerPoint.X);
@@ -121,20 +131,7 @@ namespace DoomCloneV2
             AddLoadValue(20);
             //Set Random Cells
             //07/07/2020 -  no blocks created, only enemies. 
-            for (int i = 0; i < 9; i++)
-            {
-                Point enemyPoint = getFreeCell(rand);
-                int enemyType = rand.Next(2);
-                if (enemyType > 0)
-                {
-                    units.Add(Globals.cellListGlobal[enemyPoint.X, enemyPoint.Y].CreateUnit(enemyPoint.X, enemyPoint.Y,i,Globals.UnitType.SoldierGun));
-
-                }
-                else
-                {
-                    units.Add(Globals.cellListGlobal[enemyPoint.X, enemyPoint.Y].CreateUnit(enemyPoint.X, enemyPoint.Y,i,Globals.UnitType.Devil));
-                }
-            }
+            units=Globals.FillMapWithEnemies();
             AddLoadValue(20);
             //20/01/2021 - Add palyer Hud
             playerHud = new Hud(ref thisPlayer);
@@ -147,22 +144,7 @@ namespace DoomCloneV2
 
             Globals.StopMusic();
         }
-        public Point getFreeCell(Random rand)
-        {
-
-            int xForBlock = rand.Next(Globals.cellSize - 2) + 1;
-            int yForBLock = rand.Next(Globals.cellSize - 2) + 1;
-            while (Globals.cellListGlobal[xForBlock, yForBLock].GetisUnitPresent() || Globals.cellListGlobal[xForBlock, yForBLock].GetMat() || Globals.cellListGlobal[xForBlock, yForBLock].GetPlayer() != -1)
-            {
-
-                Debug.WriteLine("Clinet:Trying co-ords" + xForBlock + "," + yForBLock);
-                xForBlock = rand.Next(Globals.cellSize - 2) + 1;
-                 yForBLock = rand.Next(Globals.cellSize - 2) + 1;
-            }
-            Debug.WriteLine("Client: Got co-ords"+xForBlock+","+yForBLock);
-            return new Point(xForBlock,yForBLock);
-
-        }
+       
 
 
         private void AddLoadValue(int value)
@@ -202,7 +184,18 @@ namespace DoomCloneV2
                 Globals.clientName= configXml.SelectSingleNode("Config/ClientName").InnerText;
                 Globals.playerFileName = configXml.SelectSingleNode("Config/PlayerFileName").InnerText;
                 Debug.WriteLine("PlayerFileName is :" + String.Format("{0:00}", Int32.Parse(Globals.playerFileName)));
+                try
+                {   int kataR = Int32.Parse(configXml.SelectSingleNode("Config/KatanaRed").InnerText);
+                    int kataG = Int32.Parse(configXml.SelectSingleNode("Config/KatanaGreen").InnerText);
+                    int kataB = Int32.Parse(configXml.SelectSingleNode("Config/KatanaBlue").InnerText);
 
+                    Globals.katanaColor = Color.FromArgb(255, kataR, kataG, kataB);
+                }
+                catch(Exception e)
+                {
+                    Globals.WriteDebug("Form1.cs -> ReadConfig ","Error colouring Katana",true);
+                    Globals.katanaColor = Color.FromArgb(255, 255, 0, 0);
+                }
 
             }
             catch(Exception e)
@@ -615,7 +608,7 @@ namespace DoomCloneV2
                                 {
                                     if (! players[playerID2].usingPowerUpFrame)
                                     {
-                                        cR.Powerup(playerID2, commands[i]);
+                                        cR.Powerup(playerID2, commands[i],players[playerID2].GetPowerup().powerUpType);
                                     }
                                 }
                                 break;
@@ -674,14 +667,13 @@ namespace DoomCloneV2
                                     Debug.WriteLine("Server PlayerName is " + thisPlayer.playerFileName);
                                     Debug.WriteLine("New PlayerName is " + fileName);
                                     Debug.WriteLine("Respective substrings are " + thisPlayer.playerFileName.Substring(thisPlayer.playerFileName.Length - 2, 2) + "," + fileName.Substring(fileName.Length - 2, 2));
-                                    Point playerNewPoint = getFreeCell(new Random());
+                                    Point playerNewPoint = Globals.GetFreeCell(new Random());
                                     players.Add(new Player(playerNewPoint.X, playerNewPoint.Y, 1, players.Count, fileName));
                                     playerUnits.Add(Globals.cellListGlobal[playerNewPoint.X, playerNewPoint.Y].CreateUnit(playerNewPoint.X, playerNewPoint.Y,players.Count-2, Globals.UnitType.Player, "Resources/Images/Friendly/" + fileName + "/" + fileName + "_Idle.png"));                                    Debug.WriteLine("ServerClient: Messaging out New Players. There are " + players.Count + " players");
                                     thisClient.Write("DEL");
                                     ///SEP - Set Player-SEP[00 PlayerID][000 Player X Position][000 Player Y Position][char(1) Player direction][00 PlayerCharacterFile][0 Player AP] - Creates Player of set ID at set co-ords
                                     ///SEW - Set World Block - SEW[000 BlockType][000 X Pos][000 Y Pos] - Creates Block of type 't' at location 'x','y'
                                     ///SEE - Set Enemy - SEE[000 Enemy Type][000 X Pos][000 Y Pos][0000 Deal Damage] - Places enemy and deals damage
-
                                     ///Delete All Projectiles before sending data
                                     for (int r = 0; r < units.Count; r++)
                                     {
@@ -991,26 +983,158 @@ namespace DoomCloneV2
         }
         private void DrawMenu(Graphics g)
         {
-            if (!aboutOn)
+            if (aboutOn)
             {
-                Bitmap n = new Bitmap(this.Width, this.Height);
+                g.DrawImage(Image.FromFile("Resources/Images/Menu/How-to.png"), new Point(0, 0));
+                back.Draw(g);
+               
+            }
+            else if (drawMapMakeMenu)
+            {
+                Debug.Write("\n debugging running drawMapMaker");
                 g.DrawImage(Image.FromFile("Resources/Images/Title.png"), new Point(0, 0));
-                play.Draw(g);
-                about.Draw(g);
+                MapDraw md = new MapDraw();
+                md.PaintDrawing(g);
+                back.Draw(g);
             }
             else
             {
-                Bitmap n = new Bitmap(this.Width, this.Height);
-                g.DrawImage(Image.FromFile("Resources/Images/Menu/How-to.png"), new Point(0, 0));
-                back.Draw(g);
+                g.DrawImage(Image.FromFile("Resources/Images/Title.png"), new Point(0, 0));
+                play.Draw(g);
+                about.Draw(g);
+                map.Draw(g);
             }
             
 
         }
+        public void DrawCells(Graphics g)
+        {
+            DateTime now = DateTime.Now;
+            for (int i = 0; i < units.Count; i++)
+            {
+                units[i].bottomRight = new Point(-1, -1);
+                units[i].topLeft = new Point(-1, -1);
+            }
+            //GetTargetBlockViaDirection
+            bool playerVerticalDirection = false;
+            if (thisPlayer.dir == Directions.UP || thisPlayer.dir == Directions.DOWN)
+            {
+                playerVerticalDirection = true;
+            }
+            int offset = 0;
+            if (playerVerticalDirection)
+            {
+                offset = thisPlayer.GetX();
+            }
+            else
+            {
+                offset = thisPlayer.Gety();
+            }
+            int maxDepth = GetMaxDepth();
+            int loopFromBack = 0;
+            while (loopFromBack < maxDepth)
+            {
+
+                int loopFromLeft = /*targetbase*/0;
+                int scanAcrossMax = ((maxDepth - loopFromBack) * 2) + 1;
+                int halfScan = maxDepth - loopFromBack;
+                while (loopFromLeft < scanAcrossMax /*baselineTargetSquare*/)
+                {
+                    {
+                        int screenHeight = this.Height;
+                        int screenWidth = this.Width;
+                        //Create centreLine)
+                        ///<summary>centerLine is the value of the Cell being drawn. 0= to the Left of screen, 1 = down the middle, 2= to the right of screen</summary>
+                        int centreLine = 1;
+                        //left
+                        if (loopFromLeft < halfScan)
+                        {
+                            centreLine = 0;
+                        }
+                        //right
+                        else if (loopFromLeft > halfScan)
+                        {
+                            centreLine = 2;
+                        }
+                        int pickX = 0;
+                        int pickY = 0;
+                        bool matToLeft = false;
+                        if (thisPlayer.dir == Directions.UP)
+                        {
+                            pickX = (offset - halfScan) + loopFromLeft;
+                            pickY = (thisPlayer.Gety() + 1) - (maxDepth - loopFromBack);
+                        }
+                        else if (thisPlayer.dir == Directions.DOWN)
+                        {
+                            pickX = (offset + halfScan) - loopFromLeft;
+                            pickY = (thisPlayer.Gety() - 1) + (maxDepth - loopFromBack);
+                        }
+                        else if (thisPlayer.dir == Directions.LEFT)
+                        {
+                            pickY = (offset + halfScan) - loopFromLeft;
+                            pickX = (thisPlayer.GetX() + 1) - (maxDepth - loopFromBack);
+                        }
+                        else if (thisPlayer.dir == Directions.RIGHT)
+                        {
+                            pickY = (offset - halfScan) + loopFromLeft;
+                            pickX = (thisPlayer.GetX() - 1) + (maxDepth - loopFromBack);
+                        }
+                        if (pickX >= 0 && pickX < Globals.cellListGlobal.GetLength(0) && pickY >= 0 && pickY < Globals.cellListGlobal.GetLength(1))
+                        {
+                            //if (Globals.cellListGlobal[pickX,pickY].GetisUnitPresent()== unitsa)
+                            {
+                                bool MatFront = false;
+                                if (loopFromBack == maxDepth - 1 && loopFromLeft == 1 && Globals.cellListGlobal[pickX, pickY].GetMat())
+                                {
+                                    MatFront = true;
+                                }
+                                if (thisPlayer.dir == Directions.UP && pickX > 0 && centreLine == 2)
+                                {
+                                    if /*(Globals.cellListGlobal[pickX - 1, pickY].GetisUnitPresent() || */(Globals.cellListGlobal[pickX - 1, pickY].GetMat())
+                                    {
+                                        matToLeft = true;
+                                    }
+                                }
+                                else if (thisPlayer.dir == Directions.DOWN && pickX < Globals.cellListGlobal.GetLength(0) - 1 && centreLine == 2)
+                                {
+                                    if /*(Globals.cellListGlobal[pickX + 1, pickY].GetisUnitPresent() ||*/(Globals.cellListGlobal[pickX + 1, pickY].GetMat())
+                                    {
+                                        matToLeft = true;
+                                    }
+                                }
+                                else if (thisPlayer.dir == Directions.LEFT && pickY > 0 && centreLine == 2)
+                                {
+                                    if /*(Globals.cellListGlobal[pickX, pickY + 1].GetisUnitPresent() || */(Globals.cellListGlobal[pickX, pickY + 1].GetMat())
+                                    {
+                                        matToLeft = true;
+                                    }
+                                }
+                                else if (thisPlayer.dir == Directions.RIGHT && pickY < Globals.cellListGlobal.GetLength(0) - 1 && centreLine == 2)
+                                {
+                                    if /*(Globals.cellListGlobal[pickX, pickY - 1].GetisUnitPresent() || */(Globals.cellListGlobal[pickX, pickY - 1].GetMat())
+                                    {
+                                        matToLeft = true;
+                                    }
+                                }
+                                Globals.cellListGlobal[pickX, pickY].Draw(g, centreLine, loopFromBack, loopFromLeft, maxDepth, screenWidth, screenHeight, Globals.drawLines, matToLeft, MatFront);
+                            }
+
+                        }
+
+                    }
+                    loopFromLeft++;
+
+                }
+                loopFromBack++;
+            }
+            averageTimeToRunDrawing = averageTimeToRunDrawing.Add(now - DateTime.Now);
+            averageTimeToRunDrawing = TimeSpan.FromMilliseconds(averageTimeToRunDrawing.TotalMilliseconds / 2);
+            
+        }
         /// <summary>
         /// FormUpdate is used to perform the graphical calcualtions for where various objects will appear on the screen, and call their
         /// respective drawing functions in order.
-        /// This needs to be run after 'RunCommands', which will update the game state before this fucntion draws it
+        /// FormUpdate Draws the new 'Frame' to a blank Graphics object, then draws that object onto the form
         /// </summary>
         /// <param name="unitsa">Whether to draw non-cell specfic items (Such as units or player views)</param>
         private void FormUpdate(bool unitsa = false,Graphics e = null){
@@ -1024,134 +1148,23 @@ namespace DoomCloneV2
                     //this.cursor.DebugPrint();
                     this.cursor.MoveCursor();
                 }
-                for (int i = 0; i < units.Count; i++)
-                {
-                    units[i].bottomRight = new Point(-1, -1);
-                    units[i].topLeft = new Point(-1, -1);
-                }
-                //GetTargetBlockViaDirection
-                bool playerVerticalDirection = false;
-                if (thisPlayer.dir == Directions.UP || thisPlayer.dir == Directions.DOWN)
-                {
-                    playerVerticalDirection = true;
-                }
-                int offset = 0;
-                if (playerVerticalDirection)
-                {
-                    offset = thisPlayer.GetX();
-                }
-                else
-                {
-                    offset = thisPlayer.Gety();
-                }
-                int maxDepth = GetMaxDepth();
-                int loopFromBack = 0;
-                while (loopFromBack < maxDepth)
-                {
-
-                    int loopFromLeft = /*targetbase*/0;
-                    int scanAcrossMax = ((maxDepth - loopFromBack) * 2) + 1;
-                    int halfScan = maxDepth - loopFromBack;
-                    while (loopFromLeft < scanAcrossMax /*baselineTargetSquare*/)
-                    {
-                        {
-                            int screenHeight = this.Height;
-                            int screenWidth = this.Width;
-                            //Create centreLine)
-
-                            int centreLine = 1;
-                            //left
-                            if (loopFromLeft < halfScan)
-                            {
-                                centreLine = 0;
-                            }
-                            //right
-                            else if (loopFromLeft > halfScan)
-                            {
-                                centreLine = 2;
-                            }
-                            int pickX = 0;
-                            int pickY = 0;
-                            bool matToLeft = false;
-                            if (thisPlayer.dir == Directions.UP)
-                            {
-                                pickX = (offset - halfScan) + loopFromLeft;
-                                pickY = (thisPlayer.Gety() + 1) - (maxDepth - loopFromBack);
-                            }
-                            else if (thisPlayer.dir == Directions.DOWN)
-                            {
-                                pickX = (offset + halfScan) - loopFromLeft;
-                                pickY = (thisPlayer.Gety() - 1) + (maxDepth - loopFromBack);
-                            }
-                            else if (thisPlayer.dir == Directions.LEFT)
-                            {
-                                pickY = (offset + halfScan) - loopFromLeft;
-                                pickX = (thisPlayer.GetX() + 1) - (maxDepth - loopFromBack);
-                            }
-                            else if (thisPlayer.dir == Directions.RIGHT)
-                            {
-                                pickY = (offset - halfScan) + loopFromLeft;
-                                pickX = (thisPlayer.GetX() - 1) + (maxDepth - loopFromBack);
-                            }
-                            if (pickX >= 0 && pickX < Globals.cellListGlobal.GetLength(0) && pickY >= 0 && pickY < Globals.cellListGlobal.GetLength(1))
-                            {
-                                //if (Globals.cellListGlobal[pickX,pickY].GetisUnitPresent()== unitsa)
-                                {
-                                    bool MatFront = false;
-                                    if (loopFromBack == maxDepth - 1 && loopFromLeft == 1 && Globals.cellListGlobal[pickX, pickY].GetMat())
-                                    {
-                                        MatFront = true;
-                                    }
-                                    if (thisPlayer.dir == Directions.UP && pickX > 0 && centreLine == 2)
-                                    {
-                                        if /*(Globals.cellListGlobal[pickX - 1, pickY].GetisUnitPresent() || */(Globals.cellListGlobal[pickX - 1, pickY].GetMat())
-                                        {
-                                            matToLeft = true;
-                                        }
-                                    }
-                                    else if (thisPlayer.dir == Directions.DOWN && pickX < Globals.cellListGlobal.GetLength(0) - 1 && centreLine == 2)
-                                    {
-                                        if /*(Globals.cellListGlobal[pickX + 1, pickY].GetisUnitPresent() ||*/(Globals.cellListGlobal[pickX + 1, pickY].GetMat())
-                                        {
-                                            matToLeft = true;
-                                        }
-                                    }
-                                    else if (thisPlayer.dir == Directions.LEFT && pickY > 0 && centreLine == 2)
-                                    {
-                                        if /*(Globals.cellListGlobal[pickX, pickY + 1].GetisUnitPresent() || */(Globals.cellListGlobal[pickX, pickY + 1].GetMat())
-                                        {
-                                            matToLeft = true;
-                                        }
-                                    }
-                                    else if (thisPlayer.dir == Directions.RIGHT && pickY < Globals.cellListGlobal.GetLength(0) - 1 && centreLine == 2)
-                                    {
-                                        if /*(Globals.cellListGlobal[pickX, pickY - 1].GetisUnitPresent() || */(Globals.cellListGlobal[pickX, pickY - 1].GetMat())
-                                        {
-                                            matToLeft = true;
-                                        }
-                                    }
-                                    Globals.cellListGlobal[pickX, pickY].Draw(g, centreLine, loopFromBack, loopFromLeft, maxDepth, screenWidth, screenHeight, Globals.drawLines, matToLeft, MatFront);
-                                }
-
-                            }
-
-                        }
-                        loopFromLeft++;
-
-                    }
-                    loopFromBack++;
-                }
+                DrawCells(g);
+                ///
+                ///DRAW TEXT
+                ///
                 if (drawPrompt)
                 {
                     this.textDisplay.GetImage(g, this.pfc);
                 }
+                ///
+                ///DRAW DEBUG DATA
+                ///
                 if (Globals.drawText){
                     if (Globals.flags[0])
                     {
 
                         g.DrawString("DrawingMap! ", new Font(pfc.Families[0], 16), new SolidBrush(Color.Red), 0, 0);
                         g.DrawString("Your direction is : " + thisPlayer.dir, new Font(pfc.Families[0], 16), new SolidBrush(Color.Red), 0, 20);
-                        g.DrawString("Your MaxDepth is : " + maxDepth, new Font(pfc.Families[0], 16), new SolidBrush(Color.Red), 0, 40);
                         g.DrawString("PlayerID : " + this.thisPlayer.GetPlayerID() + " PlayerSkin " + Globals.playerFileName, new Font(pfc.Families[0], 16), new SolidBrush(Color.Yellow), 0, 60);
                         
 
@@ -1180,15 +1193,15 @@ namespace DoomCloneV2
                 }
 
 
-                //If Poqwerup in use
+                //If Poqwerup in use draw powerup
                 if (Globals.drawingPowerup<8)
                 {
-                    RefreshPlayerView(this.thisPlayer.GetPowerupImage());
+                    RefreshPlayerView(this.thisPlayer.GetPowerupImage(),Globals.drawingPowerup);
                     Globals.drawingPowerup++;
                 }
                 else
                 {
-                    //DrawGunShooting
+                    //DrawGunShooting if gun is shooting
                     if (Globals.flags[1] == true)
                     {
                         RefreshPlayerView(this.thisPlayer.GetPlayerGun());
@@ -1208,11 +1221,13 @@ namespace DoomCloneV2
                     g.DrawImage(thisPlayer.playerView, new Point(this.Width - thisPlayer.playerView.Width - 10, this.Height - thisPlayer.playerView.Height - 40));
 
                 }
-
-                if (cursorUp)
-                {
-                    this.cursor.Draw(g);
+                if(!lockPlayer){
+                    if (cursorUp)
+                    {
+                        this.cursor.Draw(g);
+                    }
                 }
+                
                 if (Globals.drawHUD)
                 {
                     playerHud.DrawHud(g, n.Width, n.Height);
@@ -1241,36 +1256,33 @@ namespace DoomCloneV2
                 
             debugTimesTaken++;
             averageTimeToRun += debugDate.Subtract(DateTime.Now);
-            if (debugTimesTaken % 5 == 0)
+            averageTimeToRun = TimeSpan.FromMilliseconds(averageTimeToRun.Milliseconds / 2);
+            if (debugTimesTaken % Globals.debugTimes == 0)
             {
-                Globals.WriteDebug("Form1.cs -> UpdateForm() -> ", " \n -> \n -> \n ->5 Debug Times Done, averge time is " + averageTimeToRun + " \n -> \n -> \n ->", true);
+                Globals.WriteDebug("Form1.cs -> UpdateForm() -> ", " \n -> \n -> \n ->" + Globals.debugTimes + " Debug Times Done, averge time is " + averageTimeToRun.TotalMilliseconds + " ms \n -> \n -> \n ->", true);
+                Globals.WriteDebug("Form1.cs -> UpdateForm() -> ", " \n -> \n -> \n -> average  Drawtime is " + averageTimeToRunDrawing.TotalMilliseconds + " ms \n -> \n -> \n ->", true);
             }
-            if (debugTimesTaken == 1000)
+            if (debugTimesTaken == 10000)
             {
                 debugTimesTaken = 1;
             }
-            averageTimeToRun = TimeSpan.FromMilliseconds(averageTimeToRun.TotalMilliseconds / debugTimesTaken);
             //
             //END DEBUG TIMING
             //
 
         }
         /// <summary>
-        /// RefreshPlayerView takes a given image and sets the form's playerview as tat image resized to the application size
+        /// RefreshPlayerView takes a given image array and sets the screens's first-person view  as the iamge in the array at Globals.aniamtions[0], 
+        /// resized to the application size
         /// </summary>
         /// <param name="img">The bitmap iamge to be set as playerview</param>
-        public void RefreshPlayerView(Bitmap[] img)
-        { 
-        if (Globals.drawingPowerup>7)
+        public void RefreshPlayerView(Bitmap[] img,int frame=-1)
         {
-
-                this.thisPlayer.playerView = img[Globals.animations[0]];
-        }
-        else
-        {
-                this.thisPlayer.playerView = img[Globals.drawingPowerup];
-        }
-
+            if (frame <0)
+            {
+                frame = Globals.animations[0];
+            }
+            this.thisPlayer.playerView = img[frame];
         }
         /// <summary>
         /// GetMaxDepth is used to callculate how many 'cells' away from the player, based on their current view,
@@ -1641,6 +1653,7 @@ namespace DoomCloneV2
                         break;
                     case Keys.Q:
                         this.thisPlayer.RefreshGun();
+                        this.thisPlayer.updateGunSize(this.Width/2,this.Height/2);
                         RefreshPlayerView(this.thisPlayer.GetPlayerGun());
                         break;
                     case Keys.U:
@@ -1776,7 +1789,7 @@ namespace DoomCloneV2
         private void ClickHandler(Unit unitClicked,int x,int y)
         {
             cursorUp = true;
-            this.cursor = new CursorObject(new Bitmap("Resources/Images/Utility/Crosshair.png"),x,y, this.Height/5,50);
+            this.cursor = new CursorObject(new Bitmap("Resources/Images/Utility/Crosshair.png"),x,y, this.Height/(10 +thisPlayer.GetGunAccuracy()),50);
             this.Invalidate();
         }
         /// <summary>
@@ -1806,8 +1819,26 @@ namespace DoomCloneV2
         /// <param name="e">The arguments of that particular MouseClick</param>
         private void MouseClicker(object sender, System.Windows.Forms.MouseEventArgs e)
         {
+            Debug.Write("CLicking");
             if (menu)
             {
+                if (drawMapMakeMenu)
+                {
+                    if (e.X > 50 && e.X < (Globals.cellSize * 10) + 50)
+                    {
+                        if (e.Y > 50 && e.Y < (Globals.cellSize * 10) + 50)
+                        {
+                            int gridX = (e.X - 50) / 10;
+                            int gridY = (e.Y - 50) / 10;
+                            if (Globals.cellListGlobal[gridX, gridY].GetMat())
+                            {
+                                Globals.cellListGlobal[gridX, gridY].setMat(false, Globals.drawColor);
+                                DrawMenu(this.CreateGraphics());
+                            }
+                        }
+                    }
+                }
+               
                 if (e.X > play.x && e.X < play.x + play.length)
                 {
                     if (e.Y > play.y && e.Y < play.y + play.length)
@@ -1827,6 +1858,13 @@ namespace DoomCloneV2
                     if (e.Y > about.y && e.Y < about.y + about.length)
                     {
                         about.OnClick();
+                    }
+                }
+                if (e.X > map.x && e.X < map.x + map.length)
+                {
+                    if (e.Y > map.y && e.Y < map.y + map.length)
+                    {
+                        map.OnClick();
                     }
                 }
             }
@@ -1906,15 +1944,27 @@ namespace DoomCloneV2
         /// </summary>
         public void ToggleFunc()
         {
-            if (aboutOn)
+           aboutOn = true;
+            
+            Debug.WriteLine("aboutOn is " + aboutOn.ToString());
+            this.DrawMenu(this.CreateGraphics());
+        }
+        public void ToggleMapFunc()
+        {
+            drawMapMakeMenu = true;
+            Debug.WriteLine("drawMapMakeMenu is " + drawMapMakeMenu.ToString());
+            this.DrawMenu(this.CreateGraphics());
+        }
+        public void BackMenu()
+        {
+            if (drawMapMakeMenu || aboutOn)
             {
+                drawMapMakeMenu = false;
                 aboutOn = false;
             }
-            else
-            {
-                aboutOn = true;
-            }
-            Debug.WriteLine("aboutOn is "+aboutOn.ToString());
+            Debug.WriteLine("drawMapMakeMenu is " + drawMapMakeMenu.ToString());
+
+            Debug.WriteLine("aboutOn is " + aboutOn.ToString());
             this.DrawMenu(this.CreateGraphics());
         }
     }
