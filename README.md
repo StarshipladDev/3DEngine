@@ -3,15 +3,13 @@
 ![DoomClone](Title.png)
 ![DoomClone](SalesPitchImage.png)
 
-## Notes/Know Bugs:
+![Latest view](Marchupdate.png)
 
-> *Important* The serverClients do not currently exit, so the program must be closed from task manager if doing multiplayer, otherwise there is a memory leak *Important*
-*Fixed as of 23/01/2021*
+## Notes/Know Bugs:
 
 > A significant amount of input may result in some commands not being run
 
->No Turn Limit At The Moment
-*Fixed as of 23/01/2021*
+> Creating 'unconnected' rooms in the map editor may spawn the player in these, causing the player to e unable to reach the map
 
 
 ## Features(Planned In Brackets)
@@ -56,41 +54,142 @@ Below is the process used to draw a '3d' world.
 
 *23/01/2021 - 0.1a- Gameplay*
 
-![MapMakerImage](Gameplay.png)
-
 ## Latest Update Notes:
-Text Prompt Update
+
+![MapMakerImage](Marchupdate.png)
+
+Katana And Random Gen Weapons Update
 
 To Sum Up:
-
-Add Escape key press will exit gameplay
-
-Add Left-arrow key as the 'test' button
-
-Add Test text prompt appearing on left-arrow press
+	Added a Katana Power up that has replaced the Glock, however both wil lbe usable by next Build
+	Added a Bea test version of the map editor
+	Added further optimization code
+	Added Random camo generation
+	Added More Resources
+	Added Generic repaint utility method
 
 
 ```
-	24/03/2021{
-		Issues Encountered:
-		TextDispaly would draw the Image away from the text.
-			This was due to the iamge containign 33% transparent flaot-space. This was resolved by adding
-			a 'bump' down where the text is displayed.
-		DoomCLoneV2 -> Resources -> Add 'TextBackground' .PNG file to be displayed when text prompts appeared
-		DoomCloneV2 -> Overlays -> Add 'Overlays' Folder of classes. This is to store overlay data. May move HUD 
-			there.
-		DoomCloneV2 -> Overlays -> TextDisplays.cs -> Add class 'TextDisplay'. This is a class that can be called from a 
-				draw method, as it has an internal draw method that draws text over the aformentioned 'TextBackground' png.
-		Form1.cs -> Add refrence to a TextDisplay instance as 'textDisplay' to be called in UpdateForm();
-		Form1.cs->OnKeyUp() -> Add handler for 'left key' pressed. This si to have a key for testing new controls.
-				In this case, changing a new bool 'drawPrompt'. When 'drawPrompt' true
-				UpdateForm will call 'dispalyText's draw function
-			->Add Universal case of 'ESC' Key closing the App, for easier testing and usability
-
+	{
+		"date":"06/04/2021",
+		"updates":{
+				"update":{
+					"area":"DoomCloneV2 -> Resources",
+					"updateNotes":[
+						"Add Katana Animation PNG file",
+						"Add ModularCamo Animation PNG files for Gun",
+						"Add .WAV Audi files for each combination of heavy bullet, medium bullet, silenced and standard "
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> Form1.cs / Form1.cs->DrawCells()",
+					"updateNotes":[
+						"Add Timespan 'avrageTimeToRunDrawing' that is logged in 'DrawCells()' to better debug draw lag specifically"
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> Form1.cs -> FormUpdate() / DrawCells()",
+					"updateNotes":[
+						"Move section of code in FormUpdate that itterates drawing cells to new method 'DrawCells()' for cleaner code. "
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> Form1.cs -> MouseClicker())",
+					"updateNotes":[
+						"Add handling for nex MpaGen button being pushed and for individual cells being changed to non-mat when clicked and shown. This is to have Map Editor functionality "
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> Player.cs -> CreatePowerup()",
+					"updateNotes":[
+						"Modify Constructor call to take String of power up type, rather than hardcoded 'PUGlock'. This is to have variety of powerups",
+						"Add code that repaints RGB of 255,0,225 to Globals.katanaColor before setting Poweup o be that new image. This is so powerups can be customizable"
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> Player.cs -> SetPowerUp()",
+					"updateNotes":[
+						"Add Enum of of all powerup types and method 'SetPowerUp' that calls 'CreatePowerUp' so player object can change power ups"
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> Globals.cs",
+					"updateNotes":[
+						"Add 'katanaColor' static Color that is read in from config.This is to allow sprite customization",
+						"Add 'debugTimes' static int that is the total frames that need to be run before average time read out.This is to clear debug log"
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> Globals.cs -> FillMapWithEnemies()",
+					"updateNotes":[
+						"Add Method 'FillMapWithEnemies()' to perform the random placement of random enemeies in map outside of Form1, to allow in-game building of other maps"
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> Globals.cs -> GetFreeCell()",
+					"updateNotes":[
+						"Move method GetFreeCell() to Globals to allow in-game map changing, as map can be built from Globals now rather that Form that is playing"
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> Globals.cs -> ReColorImage()",
+					"updateNotes":[
+						"Add Method ReColorImage() to change specific pixels in a given image.This is to provide easy customization of the sprites used in-game"
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> Globals.cs -> FindFirstEntityInDistance()",
+					"updateNotes":[
+						"Add Method FindFirstEntityInDistance() to return an 'Entity' of a specified type in a line. This is due to the need for a utility method like this"
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> Cell.cs -> Cell()",
+					"updateNotes":[
+						"Modify constructor so left and right wall draw colors are lighter and darker shades of 'drawColor' respectivly, to make nicer looking gameplay"
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> Projectile.cs ",
+					"updateNotes":[
+						"Add 'id' String that is called as created from Unit. This is so individual Porjecticles can be checked/searched without looping through all projectiles"
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> CommandReader.cs -> Powerup() ",
+					"updateNotes":[
+						"Modify Method to take parameter of Player.PowerupType, and handle Katana now. This is to have a range of powerups that can be actioned"
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> Guns.cs -> SetComponent() ",
+					"updateNotes":[
+						"Modify SetComponenet so random color picked, and on selecting base iamge, Globals.ReColorIamge used to rescolour image. This is to have near limitless camos"
+					]
+				},
+				"update":{
+					"area":"DoomCloneV2 -> Projectile.cs -> Invert()",
+					"updateNotes":[
+						"Add 'Invert' Method toinver the xdirection and ydirection Values. This allows the projectile to be 'shot back' if the katana is used"
+					]
+				}
+		},
+		"issuesEncountered":{
+				"issue":{
+					"description":"Pressing 'Q' did no refresh palyer gun, but isntead removed it ",
+					"resolution":"Followed code-run path, found weapon needed to be resized via Player.changeGunSize()"
+				}
+		},
+		"ToDo":["Add MapReading","Add more utiliy map functions like sound","Add Tutorial","Add Enemy movement and meele enemy","Add Objective","Move all unit placin to Globals"]
 	}
+	
 ```
 
 ## Latest Updates
+
+*06/04/2021 - Katana*
+
+![PromoImage](Marchupdate.png)
 
 *24/03/2021 - TextPrompt*
 
@@ -126,7 +225,7 @@ End Of June 2021 -Content Build
 
 * Enemy Variety and attack patterns [0]
 
-* Rehaul of weapon System [0]
+* Rehaul of weapon System [x]
 
 * Main Menu [x]
 
@@ -154,6 +253,7 @@ I planned on this project improving my skills in the following:
 >Pixel Art and Animation
 
 ## Installing and Compiling:
+
 At the moment, the program can be run by doing the following:
 
 Unzip the "Executable" .ZIP folder.
@@ -174,7 +274,7 @@ Gun Soldiers put a target on you. If you are in that cell the next enemy turn, y
 
 The *bin/Debug/config.xml* file contains the option to select your server address to connect to and your clientName when you connect.
 
-This file also contains the skin your palyer will use. It mus be a single digit.
+This file also contains the skin your player will use. It mus be a single digit.
 Current skins are 
 
 1) Default army skin
