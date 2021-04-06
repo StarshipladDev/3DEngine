@@ -13,6 +13,8 @@ namespace DoomCloneV2
         Color drawColor;
         Color floorColor;
         Color roofColor;
+        Color leftWallColor;
+        Color rightWallColor;
         bool mat = false;
         bool isUnitOnCell = false;
         int playerOnCellIndex = -1;
@@ -30,6 +32,8 @@ namespace DoomCloneV2
             this.drawColor = drawColor;
             this.floorColor = floorColor;
             this.roofColor = roofColor;
+            this.rightWallColor = Color.FromArgb(255, drawColor.R-20, drawColor.G-20, drawColor.B-20);
+            this.leftWallColor = Color.FromArgb(255, drawColor.R+20, drawColor.G + 20, drawColor.B + 20);
         }
         public void SetPlayer(int playerIndex)
         {
@@ -65,20 +69,20 @@ namespace DoomCloneV2
             this.isUnitOnCell = false;
             this.unitOnCell = null;
         }
-        public Unit CreateUnit(int x, int y,Globals.UnitType ut = Globals.UnitType.Devil , String backupImage = null)
+        public Unit CreateUnit(int x, int y, int id,Globals.UnitType ut = Globals.UnitType.Devil , String backupImage = null)
         {
             this.isUnitOnCell = true;
             if (ut == Globals.UnitType.Player)
             {
                 this.unitOnCell = new Unit(backupImage);
-                this.unitOnCell.setUpUnit(x, y, ut, true);
+                this.unitOnCell.setUpUnit(x, y, ut, true,id);
 
             }
             else
             {
 
                 this.unitOnCell = new Unit("Resources/Images/Enemy/" + ut + "/" + ut + "_Idle.png");
-                this.unitOnCell.setUpUnit(x, y, ut, false);
+                this.unitOnCell.setUpUnit(x, y, ut, false,id);
 
             }
             return this.unitOnCell;
@@ -86,14 +90,17 @@ namespace DoomCloneV2
 
         public Corpse CreateCorpse(int x, int y, Globals.UnitType ut = Globals.UnitType.Devil, String backupDeathImage = null)
         {
-            if (ut == Globals.UnitType.Player)
+            if (corpseOnCell == null)
             {
-                this.corpseOnCell = new Corpse(backupDeathImage, 400);
-            }
-            else
-            {
+                if (ut == Globals.UnitType.Player)
+                {
+                    this.corpseOnCell = new Corpse(backupDeathImage, 400);
+                }
+                else
+                {
 
-                this.corpseOnCell = new Corpse("Resources/Images/Enemy/" + ut + "/" + ut + "_Death.png", 400);
+                    this.corpseOnCell = new Corpse("Resources/Images/Enemy/" + ut + "/" + ut + "_Death.png", 400);
+                }
             }
             return this.corpseOnCell;
         }
@@ -208,13 +215,13 @@ namespace DoomCloneV2
                         if (centreLine == 0)
                         {
                             points = new Point[] { new Point((drawLength * (loopFromLeft - 1)) + drawLength, screenHeight / 2 - (drawHeight / 2)), new Point((drawLengthPrior * (loopFromLeft)) + drawLengthPrior, screenHeight / 2 - (drawHeightPrior / 2)), new Point(drawLengthPrior * (loopFromLeft) + drawLengthPrior, screenHeight / 2 - (drawHeightPrior / 2) + drawHeightPrior), new Point(drawLength * (loopFromLeft - 1) + drawLength, screenHeight / 2 - (drawHeight / 2) + drawHeight) };
-                            g.FillPolygon(new SolidBrush(Color.Red), points);
+                            g.FillPolygon(new SolidBrush(rightWallColor), points);
                         }
                         //DrawToLeft
                         else if (centreLine == 2 && !drawLeftMat)
                         {
                             points = new Point[] { new Point(topLeft[0], topLeft[1]), new Point(bottomLeft[0], bottomLeft[1]), new Point(bottomLeftPrior[0], bottomLeftPrior[1]), new Point(topLeftPrior[0], topLeftPrior[1]) };
-                            g.FillPolygon(new SolidBrush(Color.Blue), points);
+                            g.FillPolygon(new SolidBrush(leftWallColor), points);
                         }
                         if (!playerOn)
                         {

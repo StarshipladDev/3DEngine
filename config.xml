@@ -1,6 +1,9 @@
 <Config>
     <Port>8006</Port>
     <ServerAddress>localhost</ServerAddress>
-    <ClientName>Starshiplad</ClientName>
-    <PlayerFileName>6</PlayerFileName>
+    <ClientName>New_Player</ClientName>
+    <PlayerFileName>7</PlayerFileName>
+    <KatanaRed>125</KatanaRed>
+    <KatanaGreen>125</KatanaGreen>
+    <KatanaBlue>250</KatanaBlue>
 </Config>

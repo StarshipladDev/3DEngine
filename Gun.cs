@@ -27,6 +27,7 @@ rail-> Rail_[Bullet Type]_[DamageRate]_[Name]
 sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
          * */
         int damage;
+        public int scope = 0;
         String camo_Code; // 000-Universal // 001- Tiger Strike // 002-Pinky
         String bullet_Type; // 000-Universal // 001 - Bullets //002 Rail
         String damage_Rate; // 000-Universal // 001 -Medium //002-Heavy
@@ -52,6 +53,10 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
         Bitmap muzzle_Flare;
         Bitmap picture;
         Bitmap pictureShoot;
+
+        Color newThirdColor;
+        Color newAltColor;
+        Color  newColor;
         System.Media.SoundPlayer player;
         /// <summary>
         /// Gun constructor takes a numerical code for rach component and then stores the image array of the created weapon bitmaps.
@@ -69,10 +74,10 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
         /// <param name="damage"></param>
         public Gun(String camo_Code, String bullet_Type, String damage_Rate, String ammo_Cap, String uniform_Code, String armour_Code, String race_Code, String style_Code, String sight_Code, String grip_Type, int damage)
         {
-            this.damage = damage;
+            this.damage = damage ;
             this.camo_Code = camo_Code; // 000-Universal // 001- Tiger Strike // 002-Pinky
-            this.bullet_Type = bullet_Type; // 000-Universal // 001 - Bullets //002 Rail
-            this.damage_Rate = damage_Rate; // 000-Universal // 001 -Medium //002-Heavy
+            this.bullet_Type = bullet_Type; // 000-Universal // 001 - Bullets //002 Big Bullet
+            this.damage_Rate = damage_Rate; // 000-Universal // 001 -Standard  //001 - Sileneced
             this.ammo_Cap = ammo_Cap; // 000 20-30 Rounds // 001 - 60-100 // 002 -1-5
             this.uniform_Code = uniform_Code; // 000 - Universal // 001 - Green Camo // 002 - Navy 
             this.armour_Code = armour_Code; // 000-No Armour
@@ -93,6 +98,10 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
         /// <returns> An array of each Bitmap frame of the combined animated gun </returns>
         private Bitmap[] BuildGunAnimated()
         {
+            Random rand = new Random();
+             newColor = Color.FromArgb(255, rand.Next(200) + 20, rand.Next(200) + 20, rand.Next(200) + 20);
+            newAltColor = Color.FromArgb(255, newColor.R + 30, newColor.G + 30, newColor.B + 30);
+            newThirdColor = Color.FromArgb(255, newColor.R - 20, newColor.G -20, newColor.B - 20);
             Bitmap[] gunFrames= new Bitmap[8];
             setComponent("Barrel");
             //setComponent("Muzzle_Flare");
@@ -116,7 +125,11 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
                     layer = 1;
                 }
                 picture = new Bitmap(arm.Width, arm.Height, PixelFormat.Format32bppPArgb);
-                Rectangle rec = new Rectangle((i % 4) + (i % 4) * (arm.Width / 4), layer * (arm.Height / 2), arm.Width / 4, arm.Height / 2);
+                int boxSize = (arm.Height - (arm.Height % 20)) / 2;
+                int yGrid = boxSize / 20;
+
+                Debug.WriteLine(String.Format("Image is x, y {0},{1}",arm.Width,arm.Height));
+                Rectangle rec = new Rectangle((((i % 4)+1)* yGrid) + (i % 4) * (boxSize), layer * (boxSize) + (layer+1)*yGrid,boxSize,boxSize);
                 Debug.WriteLine(String.Format("Rectangle made with x,y {0},{1} and width/height {2}/{3}", rec.X, rec.Y, rec.Width, rec.Height));
                 g = Graphics.FromImage(picture);
                 g.DrawImage(this.barrel, new Point(0, 0));
@@ -133,63 +146,11 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
                 picture = picture.Clone(rec, picture.PixelFormat);
                 gunFrames[i] = picture;
             }
-            player = new System.Media.SoundPlayer("Resources/Sound/Bang_001_001.wav");
+            player = new System.Media.SoundPlayer("Resources/Sound/Bang_"+bullet_Type+"_"+damage_Rate+".wav");
 
             g.Dispose();
             return gunFrames;
 
-        }
-        /// <summary>
-        /// buildGun is an old (13/01/2021) method that builds a static gun iamge, as per <see cref="BuildGunAnimated"/>
-        /// </summary>
-        private void buildGun()
-        {
-            setComponent("Barrel");
-            setComponent("Muzzle_Flare");
-            setComponent("Hand");
-            setComponent("Grip");
-            setComponent("Ejection");
-            setComponent("Rail");
-            setComponent("Sight");
-            setComponent("Front_Body");
-            setComponent("Receiver");
-            /*
-            setComponent("Token");
-            */
-            setComponent("Arm");
-            setComponent("Magazine");
-            picture = new Bitmap(arm.Width, arm.Height, PixelFormat.Format32bppPArgb);
-            Graphics g = Graphics.FromImage(picture);
-            g.DrawImage(this.barrel, new Point(0, 0));
-            g.DrawImage(this.hand, new Point(0, 0));
-            g.DrawImage(this.grip, new Point(0, 0));
-            g.DrawImage(this.rail, new Point(0, 0));
-            g.DrawImage(this.sight, new Point(0, 0));
-            g.DrawImage(this.front_Body, new Point(0, 0));
-            g.DrawImage(this.receiver, new Point(0, 0));
-            g.DrawImage(this.ejection, new Point(0, 0));
-            //g.DrawImage(this.token, new Point(0, 0));
-            g.DrawImage(this.arm, new Point(0, 0));
-            g.DrawImage(this.magazine, new Point(0, 0));
-            g.Dispose();
-            pictureShoot = new Bitmap(arm.Width, arm.Height, PixelFormat.Format32bppPArgb);
-            g = Graphics.FromImage(pictureShoot);
-            g.DrawImage(this.barrel, new Point(0, 0));
-            g.DrawImage(this.muzzle_Flare, new Point(0, 0));
-            g.DrawImage(this.hand, new Point(0, 0));
-            g.DrawImage(this.grip, new Point(0, 0));
-            g.DrawImage(this.rail, new Point(0, 0));
-            g.DrawImage(this.sight, new Point(0, 0));
-            g.DrawImage(this.front_Body, new Point(0, 0));
-            g.DrawImage(this.receiver, new Point(0, 0));
-            g.DrawImage(this.ejection, new Point(0, 0));
-            //g.DrawImage(this.token, new Point(0, 0));
-            g.DrawImage(this.arm, new Point(0, 0));
-            g.DrawImage(this.magazine, new Point(0, 0));
-            g.RotateTransform(20);
-            g.Dispose();
-            player = new System.Media.SoundPlayer("Resources/Sound/Bang_" + this.bullet_Type + "_" + this.damage_Rate + ".wav");
-            Debug.WriteLine("Resources/Sound/Bang_" + this.bullet_Type + "_" + this.damage_Rate + ".wav");
         }
         /// <summary>
         /// GetSound returns the <see cref="SoundPlayer"/> associated with this instance.
@@ -238,7 +199,7 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
         {
             for (int i = 0; i < animation.Length; i++)
             {
-                animation[i] = Globals.ResizeImage(animation[i], x, y);
+                animation[i] = Globals.ResizeImage(animation[i], animation[i].Width*8,animation[i].Height*8);
             }
         }
         /// <summary>
@@ -248,6 +209,7 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
         /// <param name="gunPart"> One of the compatible images for this Gun instance from the 'Resources' folder</param>
         private void setComponent(String gunPart)
         {
+            scope = Int32.Parse(this.sight_Code);
             Random rand = new Random();
             String RunningPath = AppDomain.CurrentDomain.BaseDirectory;
             String imgPath = RunningPath + "Resources\\Images\\Gun_Parts\\" + gunPart + "\\";
@@ -261,7 +223,7 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
                 switch (gunPart)
                 {
                     case "Barrel":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.camo_Code))
+                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.bullet_Type))
                         {
                             if (fileName.Substring(secondVarStart, 3).Equals("000") || fileName.Substring(secondVarStart, 3).Equals(this.damage_Rate))
                             {
@@ -324,7 +286,7 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
                         }
                         break;
                     case "Arm":
-                        if (fileName.Substring(firstVarStart, 3).Equals("000") || fileName.Substring(firstVarStart, 3).Equals(this.uniform_Code))
+                        if (fileName.Substring(firstVarStart, 3).Equals("000"))
                         {
                             if (fileName.Substring(secondVarStart, 3).Equals(this.armour_Code))
                             {
@@ -387,6 +349,8 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
                     break;
                 case "Receiver":
                     this.receiver = new Bitmap(relevantImgs[numberPicked]);
+                    this.receiver = Globals.ReColorImage(new Bitmap(relevantImgs[numberPicked]), Color.FromArgb(255, 0, 0, 255), newColor, "TestGun.png");
+                    this.receiver = Globals.ReColorImage(this.receiver, Color.FromArgb(255, 0, 0, 125), newAltColor, "TestGun1.png");
 
                     break;
                 case "Ejection":
@@ -394,7 +358,9 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
 
                     break;
                 case "Front_Body":
-                    this.front_Body = new Bitmap(relevantImgs[numberPicked]);
+                   
+                    this.front_Body = Globals.ReColorImage(new Bitmap(relevantImgs[numberPicked]), Color.FromArgb(255, 0, 0, 255), newColor, "TestGun.png");
+                    this.front_Body = Globals.ReColorImage(this.front_Body, Color.FromArgb(255, 0, 0, 125), newAltColor, "TestGun.png");
 
                     break;
                 case "Magazine":
@@ -407,6 +373,9 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
                     break;
                 case "Arm":
                     this.arm = new Bitmap(relevantImgs[numberPicked]);
+                    this.arm = Globals.ReColorImage(new Bitmap(relevantImgs[numberPicked]), Color.FromArgb(255, 0, 0, 255), newColor, "TestGun.png");
+                    this.arm = Globals.ReColorImage(this.arm, Color.FromArgb(255, 0, 0, 125), newAltColor, "TestGun1.png");
+                    this.arm = Globals.ReColorImage(this.arm, Color.FromArgb(255, 0, 0, 25), newAltColor, "TestGun1.png");
 
                     break;
                 case "Hand":

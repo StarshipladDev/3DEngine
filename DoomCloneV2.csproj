@@ -52,22 +52,25 @@
     <Compile Include="Client.cs" />
     <Compile Include="Command.cs" />
     <Compile Include="CommandReader.cs" />
-    <Compile Include="Corpse.cs" />
+    <Compile Include="Entities\Corpse.cs" />
     <Compile Include="CursorObject.cs" />
-    <Compile Include="Entity.cs" />
+    <Compile Include="Entities\Entity.cs" />
     <Compile Include="Globals.cs" />
     <Compile Include="Gun.cs" />
     <Compile Include="Hud.cs" />
+    <Compile Include="Overlays\TextDisplay.cs" />
+    <Compile Include="Powerup.cs" />
+    <Compile Include="Screens\MapDraw.cs" />
     <Compile Include="Screens\MapGenForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Player.cs" />
-    <Compile Include="Projectile.cs" />
+    <Compile Include="Entities\Player.cs" />
+    <Compile Include="Entities\Projectile.cs" />
     <Compile Include="Screens\DoomMenuItem.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="ThreadFunctions.cs" />
     <Compile Include="Screens\TitleScreen.cs" />
-    <Compile Include="Unit.cs" />
+    <Compile Include="Entities\Unit.cs" />
     <Compile Include="Screens\Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -98,7 +101,6 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <None Include="Resources\Fonts\Doomfont.ttf" />
-    <None Include="Resources\Images\FontPNG.pdn" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -135,9 +137,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\Enemy\SoldierGun\SoldierGun_Shoot.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\FontPNG.pdn">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\FontPNG.png">
@@ -200,10 +199,19 @@
     <Content Include="Resources\Images\Gun_Idle.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Images\Gun_Parts\Arm\Arm_444_444_test.png">
+    <Content Include="Resources\Images\Gun_Parts\Arm\Arm_000_000_test.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Images\Gun_Parts\Barrel\Barrel_444_444_test.png">
+    <Content Include="Resources\Images\Gun_Parts\Arm\Arm_000_001_test.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Gun_Parts\Barrel\Barrel_001_000_test.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Gun_Parts\Barrel\Barrel_002_000_testBig.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Gun_Parts\Barrel\Barrel_001_001_testSilencer.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\Gun_Parts\Defaults\Camo_Arm.png">
@@ -248,31 +256,52 @@
     <Content Include="Resources\Images\Gun_Parts\Defaults\Zebra_Body.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Images\Gun_Parts\Ejection\Ejection_444_444_test.png">
+    <Content Include="Resources\Images\Gun_Parts\Ejection\Ejection_000_000_test.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Images\Gun_Parts\Front_Body\Front_Body_444_444_red.png">
+    <Content Include="Resources\Images\Gun_Parts\Ejection\Ejection_000_000_testAgain.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Images\Gun_Parts\Grip\Grip_444_444_test.png">
+    <Content Include="Resources\Images\Gun_Parts\Front_Body\Front_Body_000_000_Generic.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Images\Gun_Parts\Hand\Hand_444_444_test.png">
+    <Content Include="Resources\Images\Gun_Parts\Front_Body\Front_Body_001_000_CamoBasic.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Images\Gun_Parts\Magazine\Magazine_444_444_temp.png">
+    <Content Include="Resources\Images\Gun_Parts\Front_Body\Front_Body_002_000_CamoSplit.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Gun_Parts\Front_Body\Front_Body_003_000_CamoStripes.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Gun_Parts\Grip\Grip_000_000_test.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Gun_Parts\Hand\Hand_000_000_test.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Gun_Parts\Magazine\Magazine_000_000_temp.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\Gun_Parts\Muzzle_Flare\Muzzle_Flare_001_000_Rifle_1.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Images\Gun_Parts\Rail\Rail_444_444_test.png">
+    <Content Include="Resources\Images\Gun_Parts\Rail\Rail_000_000_test.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Images\Gun_Parts\Receiver\Receiver_444_444_test.png">
+    <Content Include="Resources\Images\Gun_Parts\Receiver\Receiver_000_000_test.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Images\Gun_Parts\Sight\Sight_444_444_test.png">
+    <Content Include="Resources\Images\Gun_Parts\Receiver\Receiver_000_000_testWave.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Gun_Parts\Sight\Sight_000_000_CombatIron.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Gun_Parts\Sight\Sight_000_000_CrossIron.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Gun_Parts\Sight\Sight_000_001_test.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\Gun_Parts\TempAssests.zip">
@@ -285,9 +314,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\Loading_blank.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\Images\Loading_Promo.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\Logo.png">
@@ -308,10 +334,23 @@
     <Content Include="Resources\Images\Menu\How-to.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Resources\Images\Menu\MapMaker.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\Images\Menu\Play.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\Outline.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\PowerUp\Glock47Javiplayscod0\Glock47.png" />
+    <Content Include="Resources\Images\PowerUp\PUGlock\PUGlock.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\PowerUp\PUKatana\PUKatana.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\PowerUp\TikTokKatana\PUKatana.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\Projectiles\Fireball\Flame.png">
@@ -332,10 +371,19 @@
     <Content Include="Resources\Images\Utility\Crosshair.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Resources\Images\Utility\TextBackground.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Sound\Bang_001_000.wav">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\Sound\Bang_001_001.wav">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Sound\Bang_001_002.wav">
+    <Content Include="Resources\Sound\Bang_002_000.wav">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Sound\Bang_002_001.wav">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Sound\Boof.wav">
