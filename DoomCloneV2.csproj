@@ -48,18 +48,18 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Cell.cs" />
-    <Compile Include="Client.cs" />
-    <Compile Include="Command.cs" />
-    <Compile Include="CommandReader.cs" />
+    <Compile Include="Core\Cell.cs" />
+    <Compile Include="Threading\Client.cs" />
+    <Compile Include="Core\Command.cs" />
+    <Compile Include="Core\CommandReader.cs" />
     <Compile Include="Entities\Corpse.cs" />
-    <Compile Include="CursorObject.cs" />
+    <Compile Include="Logic\CursorObject.cs" />
     <Compile Include="Entities\Entity.cs" />
-    <Compile Include="Globals.cs" />
-    <Compile Include="Gun.cs" />
-    <Compile Include="Hud.cs" />
+    <Compile Include="Core\Globals.cs" />
+    <Compile Include="Logic\Gun.cs" />
+    <Compile Include="Overlays\Hud.cs" />
     <Compile Include="Overlays\TextDisplay.cs" />
-    <Compile Include="Powerup.cs" />
+    <Compile Include="Logic\Powerup.cs" />
     <Compile Include="Screens\MapDraw.cs" />
     <Compile Include="Screens\MapGenForm.cs">
       <SubType>Form</SubType>
@@ -67,8 +67,8 @@
     <Compile Include="Entities\Player.cs" />
     <Compile Include="Entities\Projectile.cs" />
     <Compile Include="Screens\DoomMenuItem.cs" />
-    <Compile Include="Server.cs" />
-    <Compile Include="ThreadFunctions.cs" />
+    <Compile Include="Threading\Server.cs" />
+    <Compile Include="Threading\ThreadFunctions.cs" />
     <Compile Include="Screens\TitleScreen.cs" />
     <Compile Include="Entities\Unit.cs" />
     <Compile Include="Screens\Form1.cs">
@@ -77,7 +77,7 @@
     <Compile Include="Screens\Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-    <Compile Include="Program.cs" />
+    <Compile Include="Core\Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Screens\Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
