@@ -187,7 +187,10 @@ namespace DoomCloneV2
         public String GetPlayerImage()
         {
             Debug.WriteLine("Input into format is "+Globals.playerFileName);
-            return String.Format("{0:00}",Int32.Parse(Globals.playerFileName));
+            //Trailing digit is this client's already-chosen secondary (see Globals.localSecondaryType,
+            //set once the player picks on Form1's secondary-picker screen) so the server can build
+            //this client's Player object with the right secondary from the moment they join.
+            return String.Format("{0:00}",Int32.Parse(Globals.playerFileName)) + Globals.localSecondaryType;
         }
         public void CloseClient()
         {

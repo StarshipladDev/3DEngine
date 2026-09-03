@@ -336,7 +336,24 @@ sight-> Receiver_[Camo Code]_[Sight_Code]_[Name]
                         break;
                 }
             }
-            int numberPicked = rand.Next(relevantImgs.Count());
+            int numberPicked;
+            if (relevantImgs.Count > 0)
+            {
+                numberPicked = rand.Next(relevantImgs.Count());
+            }
+            else if (possibleImgs.Length > 0)
+            {
+                //Nothing matched the generated codes for this part - fall back to any available image
+                //rather than crash on an empty list.
+                Debug.WriteLine("Gun.setComponent: no image matched the generated codes for '" + gunPart + "', falling back to a random available image");
+                relevantImgs = possibleImgs.ToList();
+                numberPicked = rand.Next(relevantImgs.Count());
+            }
+            else
+            {
+                Debug.WriteLine("Gun.setComponent: no images found at all for '" + gunPart + "'; leaving this part unset");
+                return;
+            }
             switch (gunPart)
             {
                 case "Barrel":

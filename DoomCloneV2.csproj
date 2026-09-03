@@ -60,6 +60,7 @@
     <Compile Include="Overlays\Hud.cs" />
     <Compile Include="Overlays\TextDisplay.cs" />
     <Compile Include="Logic\Powerup.cs" />
+    <Compile Include="Logic\Secondary.cs" />
     <Compile Include="Screens\MapDraw.cs" />
     <Compile Include="Screens\MapGenForm.cs">
       <SubType>Form</SubType>
@@ -69,7 +70,6 @@
     <Compile Include="Screens\DoomMenuItem.cs" />
     <Compile Include="Threading\Server.cs" />
     <Compile Include="Threading\ThreadFunctions.cs" />
-    <Compile Include="Screens\TitleScreen.cs" />
     <Compile Include="Entities\Unit.cs" />
     <Compile Include="Screens\Form1.cs">
       <SubType>Form</SubType>
@@ -110,6 +110,24 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Fonts\Doomfont.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Secondary\Pistol\Pistol.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Secondary\Grenade\Grenade.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Pickups\PistolAmmo\PistolAmmo_Idle.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Pickups\GrenadeAmmo\GrenadeAmmo_Idle.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Menu\PickPistol.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\Menu\PickGrenade.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\AnimationBase.pdn">

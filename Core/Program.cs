@@ -16,38 +16,17 @@ namespace DoomCloneV2
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        public static void ThreadRunnerServer()
-        {
-
-            Server s1 = new Server("192.168.200.40", "8006");
-            Thread.Sleep(1000);
-            
-        }
         static void Main()
         {
             //Acctually run the program
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
+            //As documented in the README, a map generator is shown first so the player can
+            //re-roll the layout before starting; closing it proceeds into the game.
             Application.Run(new MapGenForm());
 
             Application.Run(new Form1());
-
-            /*
-            Thread thread1 = new Thread(ThreadRunner);
-            Thread thread2 = new Thread(ThreadRunnerServer);
-
-            thread2.Start();
-            Client c1 = new Client("50001", "localhost", "Client1");
-            //Client c2 = new Client("1556", "localhost", "Client2Poo");
-
-
-            thread1.Start(c1);
-            //Thread thread2 = new Thread(ThreadRunner);
-            //thread2.Start(c2);
-            */
-
-
         }
     }
 }

@@ -20,6 +20,12 @@ namespace DoomCloneV2
     public static class Globals
     {
         public  enum UnitType { Devil, SoldierGun , Player };
+        /// <summary>
+        /// Ammo pickups for the right-click secondary ability, scattered on the map at session
+        /// start (see PlaceSecondaryAmmoPickups) so ammo has to be found rather than being
+        /// unlimited.
+        /// </summary>
+        public enum SecondaryPickupType { None, PistolAmmo, GrenadeAmmo }
         public static Cell[,] cellListGlobal;
         public static bool SinglePlayer = true;
         public static bool drawGun = true;
@@ -50,6 +56,14 @@ namespace DoomCloneV2
         public static string Address = "localhost";
         public static string clientName = "This Client";
         public static string playerFileName = "Player01";
+        //The local player's chosen secondary ability (0=Pistol,1=Grenade per Player.SecondaryType),
+        //set once they pick on Form1's secondary-picker screen. Carried along in the "COC" join
+        //handshake (see Client.GetPlayerImage) so a server constructing this client's Player object
+        //on connect starts with the right secondary instead of the constructor default.
+        public static int localSecondaryType = 0;
+        //Frame counter driving the right-click secondary's "using" animation, mirroring how
+        //drawingPowerup drives the R-key powerup's animation. >=8 means "not currently animating".
+        public static int drawingSecondary = 9;
         public const int MAXFRAMES = 8;
         public const int INTERVALTIMEMILISECONDS = 1000 / 5;
         public const int MaxPossibleDepth = 20;
@@ -175,6 +189,31 @@ namespace DoomCloneV2
             return units;
         }
 
+        /// <summary>
+        /// Returns the sprite path for a given secondary-ammo pickup type, following the same
+        /// "{folder}/{folder}_Idle.png" convention Cell.CreateUnit already uses for enemies.
+        /// </summary>
+        public static String GetSecondaryPickupImagePath(SecondaryPickupType t)
+        {
+            return String.Format("Resources/Images/Pickups/{0}/{0}_Idle.png", t);
+        }
+
+        /// <summary>
+        /// Scatters ammo pickups for the right-click secondary ability across free cells, the
+        /// same way FillMapWithEnemies scatters enemies. Called once, authoritatively, from
+        /// Form1.BeginSession.
+        /// </summary>
+        /// <param name="count">How many pickups to place.</param>
+        public static void PlaceSecondaryAmmoPickups(Random rand, int count = 6)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                Point pickupPoint = GetFreeCell(rand);
+                SecondaryPickupType t = (rand.Next(2) == 0) ? SecondaryPickupType.PistolAmmo : SecondaryPickupType.GrenadeAmmo;
+                Globals.cellListGlobal[pickupPoint.X, pickupPoint.Y].CreatePickup(t);
+            }
+        }
+
         public static void Play(string audioPath)
         {
             if (playMusic)
@@ -214,7 +253,7 @@ namespace DoomCloneV2
             switch (d)
             {
                 case Directions.DOWN:
-                    while (y < cellList.GetLength(1))
+                    while (y < cellList.GetLength(1) - 1)
                     {
 
                         y++;
@@ -260,7 +299,7 @@ namespace DoomCloneV2
                     }
                     break;
                 case Directions.RIGHT:
-                    while (x < cellList.GetLength(0))
+                    while (x < cellList.GetLength(0) - 1)
                     {
 
                         x++;
@@ -291,6 +330,56 @@ namespace DoomCloneV2
         /// <param name="distance"></param>
         /// <param name="searchType">0= Projectiles only, 1= Units only, 2 =Both</param>
         /// <returns></returns>
+        /// <summary>
+        /// Walks up to maxDistance cells from (x,y) in direction d, for the grenade secondary
+        /// ability. The grenade lands on the last open cell before a wall, lands directly on a
+        /// unit's cell if one is in its path, or otherwise travels the full distance.
+        /// </summary>
+        public static Point FindGrenadeLandingCell(int x, int y, Directions d, Cell[,] cellList, int maxDistance)
+        {
+            int lastOpenX = x;
+            int lastOpenY = y;
+            for (int step = 0; step < maxDistance; step++)
+            {
+                int nextX = x;
+                int nextY = y;
+                switch (d)
+                {
+                    case Directions.DOWN:
+                        if (y >= cellList.GetLength(1) - 1) { return new Point(lastOpenX, lastOpenY); }
+                        nextY = y + 1;
+                        break;
+                    case Directions.UP:
+                        if (y <= 0) { return new Point(lastOpenX, lastOpenY); }
+                        nextY = y - 1;
+                        break;
+                    case Directions.LEFT:
+                        if (x <= 0) { return new Point(lastOpenX, lastOpenY); }
+                        nextX = x - 1;
+                        break;
+                    case Directions.RIGHT:
+                        if (x >= cellList.GetLength(0) - 1) { return new Point(lastOpenX, lastOpenY); }
+                        nextX = x + 1;
+                        break;
+                }
+                if (cellList[nextX, nextY].GetMat())
+                {
+                    //Grenade stops just short of the wall rather than landing inside it.
+                    return new Point(lastOpenX, lastOpenY);
+                }
+                x = nextX;
+                y = nextY;
+                lastOpenX = x;
+                lastOpenY = y;
+                if (cellList[x, y].GetUnitOnCell() != null)
+                {
+                    //Direct hit - lands right on the unit's cell instead of flying past it.
+                    return new Point(x, y);
+                }
+            }
+            return new Point(x, y);
+        }
+
         public static Entity FindFirstEntityInDistance(int x, int y, Directions d, Cell[,] cellList,int distance,int searchType)
         {
             Entity returnUnit = null;
@@ -302,7 +391,7 @@ namespace DoomCloneV2
                 switch (d)
                 {
                     case Directions.DOWN:
-                        if (y < cellList.GetLength(1))
+                        if (y < cellList.GetLength(1) - 1)
                         {
                             y++;
                         }
@@ -320,7 +409,7 @@ namespace DoomCloneV2
                         }
                         break;
                     case Directions.RIGHT:
-                        if (x < cellList.GetLength(0))
+                        if (x < cellList.GetLength(0) - 1)
                         {
                             x++;
                         }

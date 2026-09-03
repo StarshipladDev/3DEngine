@@ -20,17 +20,6 @@ namespace DoomCloneV2
             Thread.Sleep(1000);
 
         }
-        public static void ThreadRunner(object c1)
-        {
-            System.Diagnostics.Debug.WriteLine("Starting Thread");
-            FileStream f = File.Create("output.txt");
-            Client c = (Client)c1;
-            c.Write("Hello From "+c.GetName());
-            Byte[] ff = System.Text.Encoding.ASCII.GetBytes(c.Read());
-            f.Write(ff, 0, ff.Length);
-            f.Close();
-            c.CloseClient();
-        }
         public static void Listen(object c1)
         {
             Array argArray = new object[2];
