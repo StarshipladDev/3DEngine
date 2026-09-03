@@ -22,6 +22,8 @@ namespace DoomCloneV2
         Unit unitOnCell = null;
         Projectile projOnCell = null;
         Corpse corpseOnCell = null;
+        Entity pickupOnCell = null;
+        Globals.SecondaryPickupType pickupType = Globals.SecondaryPickupType.None;
         public Cell(bool mat, Color drawColor, Color floorColor, Color roofColor)
         {
             this.mat = mat;
@@ -103,6 +105,24 @@ namespace DoomCloneV2
                 }
             }
             return this.corpseOnCell;
+        }
+        /// <summary>
+        /// Places a secondary-ammo pickup on this cell (a non-animated <see cref="Entity"/>, drawn
+        /// through the same distance-scaled pipeline as units/projectiles/corpses).
+        /// </summary>
+        public void CreatePickup(Globals.SecondaryPickupType t)
+        {
+            this.pickupType = t;
+            this.pickupOnCell = new Entity(Globals.GetSecondaryPickupImagePath(t), 400, false);
+        }
+        public void RemovePickup()
+        {
+            this.pickupType = Globals.SecondaryPickupType.None;
+            this.pickupOnCell = null;
+        }
+        public Globals.SecondaryPickupType GetPickupType()
+        {
+            return this.pickupType;
         }
         public bool GetisUnitPresent()
         {
@@ -244,6 +264,10 @@ namespace DoomCloneV2
                         if(this.corpseOnCell != null)
                         {
                             corpseOnCell.Draw(g, drawLength, drawHeight, topLeft);
+                        }
+                        if (this.pickupOnCell != null)
+                        {
+                            pickupOnCell.Draw(g, drawLength, drawHeight, topLeft);
                         }
                     }
 

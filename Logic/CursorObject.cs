@@ -81,7 +81,7 @@ namespace DoomCloneV2
             //Do y
             if (y < mastery)
             {
-                goaly = x + rand.Next(maxShift);
+                goaly = y + rand.Next(maxShift);
             }
             else
             {

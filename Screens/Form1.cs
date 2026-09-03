@@ -37,6 +37,9 @@ namespace DoomCloneV2
         bool aboutOn = false;
         bool drawMapMakeMenu = false;
         bool drawPrompt = false;
+        //True while the once-per-session "pick your secondary" screen (see ChoosePistol/
+        //ChooseGrenade) is showing, right after BeginSession and before normal play begins.
+        bool choosingSecondary = false;
         bool[] playerEndTurnArray = new bool[20];
         bool lockPlayer = false;
         Client thisClient = null;
@@ -57,6 +60,11 @@ namespace DoomCloneV2
 
         DoomMenuItem mapBack;
         DoomMenuItem map;
+        DoomMenuItem pickPistol;
+        DoomMenuItem pickGrenade;
+        //Cached so DrawMenu() (called every frame while the menu is showing) doesn't reload these from disk each time.
+        Image titleImage;
+        Image howToImage;
         TextDisplay textDisplay;
         Hud playerHud;
         /// <summary>
@@ -71,11 +79,17 @@ namespace DoomCloneV2
             DoomMenuItem.actionfunction ac2 = ToggleFunc;
             DoomMenuItem.actionfunction ac3 = ToggleMapFunc;
             DoomMenuItem.actionfunction ac4 = BackMenu;
+            DoomMenuItem.actionfunction ac5 = ChoosePistol;
+            DoomMenuItem.actionfunction ac6 = ChooseGrenade;
             play = new DoomMenuItem(300, 200, Image.FromFile("Resources/Images/Menu/Play.png"), ac1);
             about = new DoomMenuItem(300, 300, Image.FromFile("Resources/Images/Menu/About.png"), ac2);
             back = new DoomMenuItem(400, 400, Image.FromFile("Resources/Images/Menu/Back.png"), ac4);
             map = new DoomMenuItem(300, 400, Image.FromFile("Resources/Images/Menu/MapMaker.png"), ac3);
             mapBack = new DoomMenuItem(400, 400, Image.FromFile("Resources/Images/Menu/Back.png"), ac4);
+            pickPistol = new DoomMenuItem(250, 260, Image.FromFile("Resources/Images/Menu/PickPistol.png"), ac5);
+            pickGrenade = new DoomMenuItem(450, 260, Image.FromFile("Resources/Images/Menu/PickGrenade.png"), ac6);
+            titleImage = Image.FromFile("Resources/Images/Title.png");
+            howToImage = Image.FromFile("Resources/Images/Menu/How-to.png");
             pfc = new PrivateFontCollection();
             pfc.AddFontFile("Resources/Fonts/Doomfont.ttf");
             InitializeComponent();
@@ -133,6 +147,8 @@ namespace DoomCloneV2
             //07/07/2020 -  no blocks created, only enemies. 
             units=Globals.FillMapWithEnemies();
             AddLoadValue(20);
+            //Scatter secondary-ability ammo pickups across the map (the "find it" hindrance).
+            Globals.PlaceSecondaryAmmoPickups(rand);
             //20/01/2021 - Add palyer Hud
             playerHud = new Hud(ref thisPlayer);
             AddLoadValue(20);
@@ -141,8 +157,39 @@ namespace DoomCloneV2
             AddLoadValue(20);
             Globals.pauseForInfo = false;
             loadingProgress = 0;
+            //Show the secondary-weapon picker before normal play begins; ChoosePistol/
+            //ChooseGrenade (wired to its two DoomMenuItems) apply the choice and clear this flag.
+            choosingSecondary = true;
 
             Globals.StopMusic();
+        }
+        private void ChoosePistol()
+        {
+            ChooseSecondary(Player.SecondaryType.PISTOL);
+        }
+        private void ChooseGrenade()
+        {
+            ChooseSecondary(Player.SecondaryType.GRENADE);
+        }
+        /// <summary>
+        /// Applies the player's chosen secondary locally, remembers it (so a later "P" to join a
+        /// multiplayer server carries the choice along in the initial handshake - see
+        /// Client.GetPlayerImage), and broadcasts it so anyone already connected updates their
+        /// copy of this player too.
+        /// </summary>
+        private void ChooseSecondary(Player.SecondaryType t)
+        {
+            thisPlayer.SetSecondaryType(t);
+            Globals.localSecondaryType = (int)t;
+            choosingSecondary = false;
+            if (Globals.SinglePlayer)
+            {
+                AddToCommandString("SST" + String.Format("{0:00}", 0) + (int)t);
+            }
+            else
+            {
+                this.thisClient.Write("SST" + String.Format("{0:00}", thisClient.GetID()) + (int)t);
+            }
         }
        
 
@@ -543,6 +590,7 @@ namespace DoomCloneV2
                                     for (int resetPlayers = 0; resetPlayers < players.Count(); resetPlayers++)
                                     {
                                         players[resetPlayers].ChangeActionPoints(5);
+                                        players[resetPlayers].ResetSecondaryTurn();
                                     }
                                     for (int playerCounter = 0; playerCounter < playerEndTurnArray.Length; playerCounter++)
                                     {
@@ -559,6 +607,7 @@ namespace DoomCloneV2
                                 {
                                     lockPlayer = false;
                                     this.players[playerID].ChangeActionPoints(5);
+                                    this.players[playerID].ResetSecondaryTurn();
                                 }
                                 Globals.WriteDebug("Form -> RunCommands() ->ETS", "Server ended finished actioning , Palyer AP is "+thisPlayer.ChangeActionPoints(0), true);
                                 break;
@@ -609,6 +658,69 @@ namespace DoomCloneV2
                                     if (! players[playerID2].usingPowerUpFrame)
                                     {
                                         cR.Powerup(playerID2, commands[i],players[playerID2].GetPowerup().powerUpType);
+                                    }
+                                }
+                                break;
+                            //
+                            //Set Player to be using their right-click Secondary ability.
+                            //DSC - Do Secondary - DSC[00 PlayerID] - mirrors DPU above. Re-checks
+                            //CanUseSecondary() authoritatively (every client runs this identically)
+                            //rather than trusting whatever the sender's own local check decided.
+                            //
+                            case "DSC":
+                                int secPlayerId = Int32.Parse(commands[i].Substring(3, 2));
+                                if (secPlayerId > -1 && secPlayerId < players.Count)
+                                {
+                                    if (players[secPlayerId].CanUseSecondary())
+                                    {
+                                        players[secPlayerId].UseSecondaryCharge();
+                                        cR.UseSecondary(secPlayerId, players[secPlayerId].GetSecondaryType());
+                                    }
+                                }
+                                break;
+                            //
+                            //Deal secondary-ability damage to an enemy unit. Deliberately doesn't
+                            //touch action points (unlike SHE/SHW) since a grenade can hit several
+                            //units per use and the secondary is already gated by its own ammo/
+                            //once-per-turn limits.
+                            //DSH - Deal Secondary Hit - DSH[000 UnitIndex][0000 Damage]
+                            //
+                            case "DSH":
+                                int dshUnitIndex = Int32.Parse(commands[i].Substring(3, 3));
+                                int dshDamage = Int32.Parse(commands[i].Substring(6, 4));
+                                if (dshUnitIndex > -1 && dshUnitIndex < units.Count)
+                                {
+                                    units[dshUnitIndex].DealDamage(dshDamage);
+                                }
+                                break;
+                            //
+                            //Sets which secondary a player has equipped - broadcast once when they
+                            //pick on the secondary-picker screen, and applied identically by every
+                            //client (including the sender) so everyone's copy of that player agrees.
+                            //SST - Set Secondary Type - SST[00 PlayerID][0 Type]
+                            //
+                            case "SST":
+                                int sstPlayerId = Int32.Parse(commands[i].Substring(3, 2));
+                                int sstType = Int32.Parse(commands[i].Substring(5, 1));
+                                if (sstPlayerId > -1 && sstPlayerId < players.Count)
+                                {
+                                    players[sstPlayerId].SetSecondaryType((Player.SecondaryType)sstType);
+                                }
+                                break;
+                            //
+                            //Tells a newly-joined client about an existing secondary-ammo pickup,
+                            //mirroring how SEW/SEE snapshot walls/enemies during the COC handshake.
+                            //SEA - Set Ammo pickup - SEA[000 PickupType][000 X][000 Y]
+                            //
+                            case "SEA":
+                                if (!server)
+                                {
+                                    int seaType = Int32.Parse(commands[i].Substring(3, 3));
+                                    int seaX = Int32.Parse(commands[i].Substring(6, 3));
+                                    int seaY = Int32.Parse(commands[i].Substring(9, 3));
+                                    if (seaX > -1 && seaX < Globals.cellListGlobal.GetLength(0) && seaY > -1 && seaY < Globals.cellListGlobal.GetLength(1))
+                                    {
+                                        Globals.cellListGlobal[seaX, seaY].CreatePickup((Globals.SecondaryPickupType)seaType);
                                     }
                                 }
                                 break;
@@ -664,11 +776,20 @@ namespace DoomCloneV2
                                     String fileName = commands[i].Substring(5, 2);
                                     int filenameInt = Int32.Parse(fileName);
                                     fileName = "Player" + String.Format("{0:00}", filenameInt);
+                                    //The joining client's already-chosen secondary rides along here (see
+                                    //Client.GetPlayerImage) so their Player object starts out correct
+                                    //instead of the constructor default.
+                                    int joiningSecondaryType = 0;
+                                    if (commands[i].Length > 7)
+                                    {
+                                        joiningSecondaryType = Int32.Parse(commands[i].Substring(7, 1));
+                                    }
                                     Debug.WriteLine("Server PlayerName is " + thisPlayer.playerFileName);
                                     Debug.WriteLine("New PlayerName is " + fileName);
                                     Debug.WriteLine("Respective substrings are " + thisPlayer.playerFileName.Substring(thisPlayer.playerFileName.Length - 2, 2) + "," + fileName.Substring(fileName.Length - 2, 2));
                                     Point playerNewPoint = Globals.GetFreeCell(new Random());
                                     players.Add(new Player(playerNewPoint.X, playerNewPoint.Y, 1, players.Count, fileName));
+                                    players[players.Count - 1].SetSecondaryType((Player.SecondaryType)joiningSecondaryType);
                                     playerUnits.Add(Globals.cellListGlobal[playerNewPoint.X, playerNewPoint.Y].CreateUnit(playerNewPoint.X, playerNewPoint.Y,players.Count-2, Globals.UnitType.Player, "Resources/Images/Friendly/" + fileName + "/" + fileName + "_Idle.png"));                                    Debug.WriteLine("ServerClient: Messaging out New Players. There are " + players.Count + " players");
                                     thisClient.Write("DEL");
                                     ///SEP - Set Player-SEP[00 PlayerID][000 Player X Position][000 Player Y Position][char(1) Player direction][00 PlayerCharacterFile][0 Player AP] - Creates Player of set ID at set co-ords
@@ -716,6 +837,18 @@ namespace DoomCloneV2
                                         }
                                         thisClient.Write(builder);
                                     }
+                                    ///SEA - Set Ammo pickup - SEA[000 PickupType][000 X Pos][000 Y Pos]
+                                    for (int f = 0; f < Globals.cellListGlobal.GetLength(0); f++)
+                                    {
+                                        for (int z = 0; z < Globals.cellListGlobal.GetLength(1); z++)
+                                        {
+                                            Globals.SecondaryPickupType pt = Globals.cellListGlobal[f, z].GetPickupType();
+                                            if (pt != Globals.SecondaryPickupType.None)
+                                            {
+                                                thisClient.Write("SEA" + String.Format("{0:000}", (int)pt) + String.Format("{0:000}", f) + String.Format("{0:000}", z));
+                                            }
+                                        }
+                                    }
                                     for (int f = 0; f < players.Count; f++)
                                     {
                                         char directionOfPlayer = 'U';
@@ -739,7 +872,10 @@ namespace DoomCloneV2
                                                 break;
                                         }
                                         Debug.WriteLine(this.thisClient.GetName() + ": Created new player @ " + playerx + "," + playery + " via serverClient");
-                                        thisClient.Write("SEP" + String.Format("{0:00}", playerID) + String.Format("{0:000}", playerx) + String.Format("{0:000}", playery) + directionOfPlayer + String.Format("{0:00}", players[f].playerFileName.Substring(players[f].playerFileName.Length - 2, 2)+players[f].ChangeActionPoints(0)));
+                                        //Trailing digits are the player's secondary type and current ammo
+                                        //(0-9, clamped - see Player.MaxSecondaryAmmo) so a newly-joined
+                                        //client's snapshot of every existing player is complete.
+                                        thisClient.Write("SEP" + String.Format("{0:00}", playerID) + String.Format("{0:000}", playerx) + String.Format("{0:000}", playery) + directionOfPlayer + String.Format("{0:00}", players[f].playerFileName.Substring(players[f].playerFileName.Length - 2, 2)+players[f].ChangeActionPoints(0)) + (int)players[f].GetSecondaryType() + Math.Min(9, players[f].GetSecondaryAmmo()));
 
                                     }
                                     thisClient.Write("DAL");
@@ -891,6 +1027,16 @@ namespace DoomCloneV2
                                     char d = Char.Parse(commands[i].Substring(11, 1));
                                     String playerName = "Player" + String.Format("{0:00}", commands[i].Substring(12, 2));
                                     int apToGive = Int32.Parse(commands[i].Substring(14, 1));
+                                    //Trailing secondary-type/ammo snapshot (see the SEP-writing loop above);
+                                    //defensively defaulted for safety, though both sides of this protocol
+                                    //are always updated together.
+                                    int sepSecondaryType = 0;
+                                    int sepSecondaryAmmo = 0;
+                                    if (commands[i].Length >= 17)
+                                    {
+                                        sepSecondaryType = Int32.Parse(commands[i].Substring(15, 1));
+                                        sepSecondaryAmmo = Int32.Parse(commands[i].Substring(16, 1));
+                                    }
                                     Globals.Message = "Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count + ". Player has Skin " + playerName;
                                     Debug.WriteLine("Creating new Player " + playerID1 + " at " + playerx1 + "," + playery1 + " count is " + players.Count + ". Player has Skin " + playerName);
                                     if (this.players.Count == playerID1)
@@ -898,6 +1044,8 @@ namespace DoomCloneV2
                                         this.players.Add(new Player(playerx1, playery1, 1, playerID1, playerName));
                                         this.players[playerID1].ChangeActionPoints(-10);
                                         this.players[playerID1].ChangeActionPoints(apToGive);
+                                        this.players[playerID1].SetSecondaryType((Player.SecondaryType)sepSecondaryType);
+                                        this.players[playerID1].SetSecondaryAmmo(sepSecondaryAmmo);
                                         Directions dir = Directions.NULL;
                                         switch (d)
                                         {
@@ -985,27 +1133,38 @@ namespace DoomCloneV2
         {
             if (aboutOn)
             {
-                g.DrawImage(Image.FromFile("Resources/Images/Menu/How-to.png"), new Point(0, 0));
+                g.DrawImage(howToImage, new Point(0, 0));
                 back.Draw(g);
-               
+
             }
             else if (drawMapMakeMenu)
             {
                 Debug.Write("\n debugging running drawMapMaker");
-                g.DrawImage(Image.FromFile("Resources/Images/Title.png"), new Point(0, 0));
+                g.DrawImage(titleImage, new Point(0, 0));
                 MapDraw md = new MapDraw();
                 md.PaintDrawing(g);
                 back.Draw(g);
             }
             else
             {
-                g.DrawImage(Image.FromFile("Resources/Images/Title.png"), new Point(0, 0));
+                g.DrawImage(titleImage, new Point(0, 0));
                 play.Draw(g);
                 about.Draw(g);
                 map.Draw(g);
             }
-            
 
+
+        }
+        /// <summary>
+        /// Draws the once-per-session "choose your secondary" screen shown right after
+        /// BeginSession. Mouse clicks against pickPistol/pickGrenade are handled in MouseClicker.
+        /// </summary>
+        private void DrawSecondaryPicker(Graphics g)
+        {
+            g.DrawImage(titleImage, new Point(0, 0));
+            g.DrawString("Choose your Secondary (Right-Click to use)", new Font(pfc.Families[0], 18), new SolidBrush(Color.White), 60, 180);
+            pickPistol.Draw(g);
+            pickGrenade.Draw(g);
         }
         public void DrawCells(Graphics g)
         {
@@ -1143,6 +1302,12 @@ namespace DoomCloneV2
             Bitmap n = new Bitmap(this.Width, this.Height);
             Graphics g = Graphics.FromImage(n);
             if (!Globals.pauseForInfo){
+              if (choosingSecondary)
+              {
+                DrawSecondaryPicker(g);
+              }
+              else
+              {
                 if (cursorUp)
                 {
                     //this.cursor.DebugPrint();
@@ -1199,6 +1364,13 @@ namespace DoomCloneV2
                     RefreshPlayerView(this.thisPlayer.GetPowerupImage(),Globals.drawingPowerup);
                     Globals.drawingPowerup++;
                 }
+                //If the right-click secondary is in use, its animation takes over the weapon view
+                //the same way the R-key powerup's does above.
+                else if (Globals.drawingSecondary < 8)
+                {
+                    RefreshPlayerView(this.thisPlayer.GetSecondaryImage(), Globals.drawingSecondary);
+                    Globals.drawingSecondary++;
+                }
                 else
                 {
                     //DrawGunShooting if gun is shooting
@@ -1239,6 +1411,7 @@ namespace DoomCloneV2
                     g.DrawString("You Died", new Font(pfc.Families[0], 60), new SolidBrush(Color.Red), 0, (this.Height / 2) + 40);
 
                 }
+              }
             }
             //If Loading Screen
             else{
@@ -1250,6 +1423,7 @@ namespace DoomCloneV2
             }
             g.Dispose();
             e.DrawImage(n, 0, 0, n.Width, n.Height);
+            n.Dispose();
             //
             //START DEBUG TIMING
             //
@@ -1479,6 +1653,35 @@ namespace DoomCloneV2
             else
             {
                 this.thisClient.Write("DPU" + String.Format("{0:00}", thisClient.GetID()));
+            }
+        }
+        /// <summary>
+        /// TryUseSecondary is called on a right-click outside of primary-fire mode. It only starts
+        /// the local "using" animation/sound and sends the network trigger when the player is
+        /// actually allowed to fire (ammo remaining and not already used this turn) - the same
+        /// check is re-applied authoritatively wherever "DSC" is actually processed, since that
+        /// runs identically on every client/server.
+        /// </summary>
+        private void TryUseSecondary()
+        {
+            if (!thisPlayer.CanUseSecondary())
+            {
+                Globals.WriteDebug("Form1.cs -> TryUseSecondary", "Secondary not available (ammo/turn)", true);
+                return;
+            }
+            Globals.drawingSecondary = 0;
+            thisPlayer.GetSecondarySound().Play();
+            DoSecondary();
+        }
+        private void DoSecondary()
+        {
+            if (Globals.SinglePlayer)
+            {
+                AddToCommandString("DSC" + String.Format("{0:00}", 0));
+            }
+            else
+            {
+                this.thisClient.Write("DSC" + String.Format("{0:00}", thisClient.GetID()));
             }
         }
             private void MoveCommand(char direction)
@@ -1868,6 +2071,23 @@ namespace DoomCloneV2
                     }
                 }
             }
+            else if (choosingSecondary)
+            {
+                if (e.X > pickPistol.x && e.X < pickPistol.x + pickPistol.length)
+                {
+                    if (e.Y > pickPistol.y && e.Y < pickPistol.y + pickPistol.length)
+                    {
+                        pickPistol.OnClick();
+                    }
+                }
+                if (e.X > pickGrenade.x && e.X < pickGrenade.x + pickGrenade.length)
+                {
+                    if (e.Y > pickGrenade.y && e.Y < pickGrenade.y + pickGrenade.length)
+                    {
+                        pickGrenade.OnClick();
+                    }
+                }
+            }
             else if(!lockPlayer)
             {
                 if (cursorUp)
@@ -1880,6 +2100,12 @@ namespace DoomCloneV2
                     {
                         CursorHandler();
                     }
+                }
+                //Right-click outside of the primary-fire cursor triggers the secondary ability
+                //instead of the usual unit-click hit-testing below.
+                else if (e.Button == MouseButtons.Right)
+                {
+                    TryUseSecondary();
                 }
                 else
                 {
